@@ -35,7 +35,6 @@ out center;
     })
     .filter(Boolean);
 
-  // de-dupe (ways/relations can overlap with nodes sometimes)
   const seen = new Set<string>();
   return points.filter((p) => {
     const k = `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`;
@@ -86,11 +85,9 @@ function TrafficSignalsOverlay({ points }: { points: LatLng[] }) {
   React.useEffect(() => {
     if (!map || !(window as any).google?.maps) return;
 
-    // clear previous markers
     markersRef.current.forEach((m) => m.setMap(null));
     markersRef.current = [];
 
-    // add new markers
     markersRef.current = points.map(
       (p) =>
         new google.maps.Marker({
@@ -120,7 +117,6 @@ export default function Maps() {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  // Fetch traffic lights whenever center/radius changes (with a small debounce)
   React.useEffect(() => {
     const ctrl = new AbortController();
     setLoading(true);
@@ -144,73 +140,60 @@ export default function Maps() {
   }, [circleCenter, radiusMeters]);
 
   return (
-    <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'transparent' }}>
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      {/* Controls + status (kept, but no big card/centering styles) */}
       <div
         style={{
-          width: 800,
-          height: 600,
-          borderRadius: 18,
-          overflow: 'hidden',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.35)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          background: 'rgba(10,10,10,0.6)',
-          position: 'relative',
+          position: 'absolute',
+          zIndex: 2,
+          top: 12,
+          left: 12,
+          padding: 10,
+          borderRadius: 12,
+          background: 'rgba(0,0,0,0.55)',
+          backdropFilter: 'blur(8px)',
+          color: 'white',
+          fontSize: 12,
+          minWidth: 220,
         }}
       >
-        {/* Controls + status */}
-        <div
-          style={{
-            position: 'absolute',
-            zIndex: 2,
-            top: 12,
-            left: 12,
-            padding: 10,
-            borderRadius: 12,
-            background: 'rgba(0,0,0,0.55)',
-            backdropFilter: 'blur(8px)',
-            color: 'white',
-            fontSize: 12,
-            minWidth: 220,
-          }}
-        >
-          <div style={{ marginBottom: 6 }}>Radius: {radiusMeters} m</div>
-          <input
-            type="range"
-            min={100}
-            max={5000}
-            step={50}
-            value={radiusMeters}
-            onChange={(e) => setRadiusMeters(Number(e.target.value))}
-          />
-          <div style={{ opacity: 0.85, marginTop: 8 }}>
-            {loading ? 'Searching traffic lights…' : `Traffic lights: ${signals.length}`}
-          </div>
-          {error && <div style={{ marginTop: 6, color: '#ffb4b4' }}>Error: {error}</div>}
-          <div style={{ opacity: 0.8, marginTop: 6 }}>Tip: click map to move circle</div>
+        <div style={{ marginBottom: 6 }}>Radius: {radiusMeters} m</div>
+        <input
+          type="range"
+          min={100}
+          max={5000}
+          step={50}
+          value={radiusMeters}
+          onChange={(e) => setRadiusMeters(Number(e.target.value))}
+        />
+        <div style={{ opacity: 0.85, marginTop: 8 }}>
+          {loading ? 'Searching traffic lights…' : `Traffic lights: ${signals.length}`}
         </div>
-
-        <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}>
-          <Map
-            mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID}
-            defaultZoom={13}
-            defaultCenter={circleCenter}
-            disableDefaultUI={true}
-            zoomControl={true}
-            gestureHandling="greedy"
-            onClick={(e) => {
-              const ll = e.detail.latLng;
-              if (!ll) return;
-              setCircleCenter({ lat: ll.lat, lng: ll.lng });
-            }}
-            onCameraChanged={(ev: MapCameraChangedEvent) =>
-              console.log('camera changed:', ev.detail.center, 'zoom:', ev.detail.zoom)
-            }
-          />
-
-          <CircleOverlay center={circleCenter} radiusMeters={radiusMeters} />
-          <TrafficSignalsOverlay points={signals} />
-        </APIProvider>
+        {error && <div style={{ marginTop: 6, color: '#ffb4b4' }}>Error: {error}</div>}
+        <div style={{ opacity: 0.8, marginTop: 6 }}>Tip: click map to move circle</div>
       </div>
+
+      <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}>
+        <Map
+          mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID}
+          defaultZoom={13}
+          defaultCenter={circleCenter}
+          disableDefaultUI={true}
+          zoomControl={true}
+          gestureHandling="greedy"
+          onClick={(e) => {
+            const ll = e.detail.latLng;
+            if (!ll) return;
+            setCircleCenter({ lat: ll.lat, lng: ll.lng });
+          }}
+          onCameraChanged={(ev: MapCameraChangedEvent) =>
+            console.log('camera changed:', ev.detail.center, 'zoom:', ev.detail.zoom)
+          }
+        />
+
+        <CircleOverlay center={circleCenter} radiusMeters={radiusMeters} />
+        <TrafficSignalsOverlay points={signals} />
+      </APIProvider>
     </div>
   );
 }
