@@ -19,21 +19,15 @@ export function Header() {
                 Features
               </a>
               <a href="#pricing" className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Pricing
+                Impacts
               </a>
               <a href="#docs" className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Docs
+                Github
               </a>
             </nav>
           </div>
           <div className="flex items-center space-x-3">
-            <Button variant="ghost" size="sm" className="hidden md:inline-flex text-xs">
-              Sign In
-            </Button>
             <Button size="sm" className="text-xs h-8">Get Started</Button>
-            <Button variant="ghost" size="icon" className="md:hidden h-8 w-8">
-              <Menu className="h-4 w-4" />
-            </Button>
           </div>
         </div>
       </header>
