@@ -108,8 +108,8 @@ function TrafficSignalsOverlay({ points }: { points: LatLng[] }) {
 
 export default function Maps() {
   const [circleCenter, setCircleCenter] = React.useState<LatLng>({
-    lat: -33.860664,
-    lng: 151.208138,
+    lat: 33.753746,
+    lng: -84.386330,
   });
   const [radiusMeters, setRadiusMeters] = React.useState(800);
 
