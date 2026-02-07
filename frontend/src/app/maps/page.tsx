@@ -1,52 +1,99 @@
-import Maps from "../../../components/Maps";
+'use client';
 
-export default function App() {
+import * as React from 'react';
+import Maps from '../../../components/Maps';
+
+type LatLng = { lat: number; lng: number };
+
+export default function Page() {
+  const [radiusMeters, setRadiusMeters] = React.useState(800);
+  const [circleCenter, setCircleCenter] = React.useState<LatLng>({
+    lat: -33.860664,
+    lng: 151.208138,
+  });
+
+  const [loading, setLoading] = React.useState(false);
+  const [count, setCount] = React.useState(0);
+  const [error, setError] = React.useState<string | null>(null);
+
   return (
     <div
       style={{
-        minHeight: "100vh",
-        display: "flex",
+        minHeight: '100vh',
+        display: 'flex',
         gap: 16,
         padding: 16,
-        background: "#0b0b0f",
+        background: '#0b0b0f',
       }}
     >
-      {/* Sidebar */}
       <aside
         style={{
-          width: 500,
+          width: 300,
           borderRadius: 16,
           padding: 16,
-          color: "white",
-          background: "rgba(255,255,255,0.06)",
-          border: "1px solid rgba(255,255,255,0.10)",
+          color: 'white',
+          background: 'rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255,255,255,0.10)',
         }}
       >
-        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>
-          Controls
+        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>
+          Traffic signals
         </div>
 
-        <div style={{ fontSize: 12, opacity: 0.8, lineHeight: 1.5 }}>
-          Use the slider on the map to change radius. Click the map to move the
-          circle and re-fetch traffic lights.
+        <div style={{ fontSize: 12, opacity: 0.85, marginBottom: 8 }}>
+          Radius: {radiusMeters} m
+        </div>
+        <input
+          style={{ width: '100%' }}
+          type="range"
+          min={100}
+          max={5000}
+          step={50}
+          value={radiusMeters}
+          onChange={(e) => setRadiusMeters(Number(e.target.value))}
+        />
+
+        <div style={{ marginTop: 12, fontSize: 12, opacity: 0.9 }}>
+          {loading ? 'Searching…' : `Found: ${count}`}
         </div>
 
-        <div style={{ marginTop: 16, fontSize: 11, opacity: 0.65 }}>
-          Data: OpenStreetMap (Overpass)
+        {error && (
+          <div style={{ marginTop: 8, fontSize: 12, color: '#ffb4b4' }}>
+            Error: {error}
+          </div>
+        )}
+
+        <div style={{ marginTop: 12, fontSize: 11, opacity: 0.65 }}>
+          Center:
+          <br />
+          {circleCenter.lat.toFixed(6)}, {circleCenter.lng.toFixed(6)}
+        </div>
+
+        <div style={{ marginTop: 14, fontSize: 11, opacity: 0.6 }}>
+          Tip: click map to move circle
         </div>
       </aside>
 
-      {/* Map container */}
       <div
         style={{
           flex: 1,
           borderRadius: 16,
-          overflow: "hidden",
-          border: "1px solid rgba(255,255,255,0.10)",
-          background: "rgba(255,255,255,0.03)",
+          overflow: 'hidden',
+          border: '1px solid rgba(255,255,255,0.10)',
+          background: 'rgba(255,255,255,0.03)',
         }}
       >
-        <Maps />
+        <Maps
+          radiusMeters={radiusMeters}
+          setRadiusMeters={setRadiusMeters}
+          circleCenter={circleCenter}
+          setCircleCenter={setCircleCenter}
+          onStatusChange={({ loading, count, error }) => {
+            setLoading(loading);
+            setCount(count);
+            setError(error);
+          }}
+        />
       </div>
     </div>
   );

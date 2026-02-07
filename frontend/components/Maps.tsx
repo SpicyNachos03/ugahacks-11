@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { APIProvider, Map, MapCameraChangedEvent, useMap } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
 
 type LatLng = { lat: number; lng: number };
 
@@ -106,73 +106,47 @@ function TrafficSignalsOverlay({ points }: { points: LatLng[] }) {
   return null;
 }
 
-export default function Maps() {
-  const [circleCenter, setCircleCenter] = React.useState<LatLng>({
-    lat: 33.753746,
-    lng: -84.386330,
-  });
-  const [radiusMeters, setRadiusMeters] = React.useState(800);
-
+export default function Maps({
+  radiusMeters,
+  setRadiusMeters, // not used right now, but left in for future
+  circleCenter,
+  setCircleCenter,
+  onStatusChange,
+}: {
+  radiusMeters: number;
+  setRadiusMeters: React.Dispatch<React.SetStateAction<number>>;
+  circleCenter: LatLng;
+  setCircleCenter: React.Dispatch<React.SetStateAction<LatLng>>;
+  onStatusChange: (s: { loading: boolean; count: number; error: string | null }) => void;
+}) {
   const [signals, setSignals] = React.useState<LatLng[]>([]);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     const ctrl = new AbortController();
-    setLoading(true);
-    setError(null);
+    onStatusChange({ loading: true, count: signals.length, error: null });
 
     const t = setTimeout(() => {
       fetchTrafficSignals(circleCenter, radiusMeters, ctrl.signal)
-        .then((pts) => setSignals(pts))
+        .then((pts) => {
+          setSignals(pts);
+          onStatusChange({ loading: false, count: pts.length, error: null });
+        })
         .catch((e) => {
           if (e?.name === 'AbortError') return;
-          setError(String(e?.message ?? e));
           setSignals([]);
-        })
-        .finally(() => setLoading(false));
+          onStatusChange({ loading: false, count: 0, error: String(e?.message ?? e) });
+        });
     }, 350);
 
     return () => {
       clearTimeout(t);
       ctrl.abort();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [circleCenter, radiusMeters]);
 
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-      {/* Controls + status (kept, but no big card/centering styles) */}
-      <div
-        style={{
-          position: 'absolute',
-          zIndex: 2,
-          top: 12,
-          left: 12,
-          padding: 10,
-          borderRadius: 12,
-          background: 'rgba(0,0,0,0.55)',
-          backdropFilter: 'blur(8px)',
-          color: 'white',
-          fontSize: 12,
-          minWidth: 220,
-        }}
-      >
-        <div style={{ marginBottom: 6 }}>Radius: {radiusMeters} m</div>
-        <input
-          type="range"
-          min={100}
-          max={5000}
-          step={50}
-          value={radiusMeters}
-          onChange={(e) => setRadiusMeters(Number(e.target.value))}
-        />
-        <div style={{ opacity: 0.85, marginTop: 8 }}>
-          {loading ? 'Searching traffic lights…' : `Traffic lights: ${signals.length}`}
-        </div>
-        {error && <div style={{ marginTop: 6, color: '#ffb4b4' }}>Error: {error}</div>}
-        <div style={{ opacity: 0.8, marginTop: 6 }}>Tip: click map to move circle</div>
-      </div>
-
+    <div style={{ width: '100%', height: '100%' }}>
       <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}>
         <Map
           mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID}
@@ -186,9 +160,6 @@ export default function Maps() {
             if (!ll) return;
             setCircleCenter({ lat: ll.lat, lng: ll.lng });
           }}
-          onCameraChanged={(ev: MapCameraChangedEvent) =>
-            console.log('camera changed:', ev.detail.center, 'zoom:', ev.detail.zoom)
-          }
         />
 
         <CircleOverlay center={circleCenter} radiusMeters={radiusMeters} />
