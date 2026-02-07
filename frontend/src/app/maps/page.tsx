@@ -9,8 +9,8 @@ type LatLng = { lat: number; lng: number };
 export default function Page() {
   const [radiusMeters, setRadiusMeters] = React.useState(800);
   const [circleCenter, setCircleCenter] = React.useState<LatLng>({
-    lat: -33.860664,
-    lng: 151.208138,
+    lat: 33.753746,
+    lng: -84.386330,
   });
 
   const [loading, setLoading] = React.useState(false);
