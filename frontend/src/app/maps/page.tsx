@@ -8,13 +8,19 @@ type LatLng = { lat: number; lng: number };
 export default function Page() {
   const [radiusMeters, setRadiusMeters] = React.useState(800);
   const [circleCenter, setCircleCenter] = React.useState<LatLng>({
-    lat: -33.860664,
-    lng: 151.208138,
+    lat: 33.753746,
+    lng: -84.386330,
   });
 
+  // Traffic signals state
   const [loading, setLoading] = React.useState(false);
   const [count, setCount] = React.useState(0);
   const [error, setError] = React.useState<string | null>(null);
+
+  // Population state
+  const [popLoading, setPopLoading] = React.useState(false);
+  const [population, setPopulation] = React.useState<number | null>(null);
+  const [popError, setPopError] = React.useState<string | null>(null);
 
   return (
     <div
@@ -37,7 +43,7 @@ export default function Page() {
         }}
       >
         <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>
-          Traffic signals
+          Area stats
         </div>
 
         <div style={{ fontSize: 12, opacity: 0.85, marginBottom: 8 }}>
@@ -53,15 +59,34 @@ export default function Page() {
           onChange={(e) => setRadiusMeters(Number(e.target.value))}
         />
 
-        <div style={{ marginTop: 12, fontSize: 12, opacity: 0.9 }}>
+        {/* Traffic signals */}
+        <div style={{ marginTop: 14, fontSize: 12, opacity: 0.9 }}>
+          <div style={{ fontWeight: 700, marginBottom: 6 }}>Traffic signals (OSM)</div>
           {loading ? 'Searching…' : `Found: ${count}`}
+          {error && (
+            <div style={{ marginTop: 6, fontSize: 12, color: '#ffb4b4' }}>
+              Error: {error}
+            </div>
+          )}
         </div>
 
-        {error && (
-          <div style={{ marginTop: 8, fontSize: 12, color: '#ffb4b4' }}>
-            Error: {error}
+        {/* Population */}
+        <div style={{ marginTop: 14, fontSize: 12, opacity: 0.9 }}>
+          <div style={{ fontWeight: 700, marginBottom: 6 }}>Population (WorldPop)</div>
+          {popLoading
+            ? 'Estimating…'
+            : population == null
+              ? '—'
+              : population.toLocaleString()}
+          {popError && (
+            <div style={{ marginTop: 6, fontSize: 12, color: '#ffb4b4' }}>
+              Error: {popError}
+            </div>
+          )}
+          <div style={{ marginTop: 6, fontSize: 11, opacity: 0.65 }}>
+            Note: model-based estimate (WorldPop), not a census count.
           </div>
-        )}
+        </div>
 
         <div style={{ marginTop: 12, fontSize: 11, opacity: 0.65 }}>
           Center:
@@ -92,6 +117,11 @@ export default function Page() {
             setLoading(loading);
             setCount(count);
             setError(error);
+          }}
+          onPopulationChange={({ loading, population, error }) => {
+            setPopLoading(loading);
+            setPopulation(population);
+            setPopError(error);
           }}
         />
       </div>

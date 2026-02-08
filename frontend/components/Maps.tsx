@@ -44,6 +44,52 @@ out center;
   });
 }
 
+function circleToGeoJSON(center: LatLng, radiusMeters: number, steps = 128) {
+  const g = (window as any).google;
+  const computeOffset = g?.maps?.geometry?.spherical?.computeOffset;
+  if (!computeOffset) {
+    throw new Error('Google Maps geometry library not loaded. Ensure APIProvider has libraries={["geometry"]}.');
+  }
+
+  const centerLL = new g.maps.LatLng(center.lat, center.lng);
+  const coords: number[][] = [];
+
+  for (let i = 0; i < steps; i++) {
+    const heading = (i * 360) / steps;
+    const p = computeOffset(centerLL, radiusMeters, heading);
+    coords.push([p.lng(), p.lat()]); // GeoJSON is [lng, lat]
+  }
+  coords.push(coords[0]); // close ring
+
+  return {
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        properties: {},
+        geometry: { type: 'Polygon', coordinates: [coords] },
+      },
+    ],
+  };
+}
+
+async function fetchWorldPopPopulation(geojson: any, year = 2020, signal?: AbortSignal) {
+  const res = await fetch('/api/worldpop-population', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    signal,
+    body: JSON.stringify({
+      dataset: 'wpgppop',
+      year,
+      geojson,
+      runasync: false,
+    }),
+  });
+
+  if (!res.ok) throw new Error(await res.text());
+  return res.json() as Promise<{ total_population: number | null; raw?: any }>;
+}
+
 function CircleOverlay({ center, radiusMeters }: { center: LatLng; radiusMeters: number }) {
   const map = useMap();
   const circleRef = React.useRef<google.maps.Circle | null>(null);
@@ -112,15 +158,19 @@ export default function Maps({
   circleCenter,
   setCircleCenter,
   onStatusChange,
+  onPopulationChange, // NEW
 }: {
   radiusMeters: number;
   setRadiusMeters: React.Dispatch<React.SetStateAction<number>>;
   circleCenter: LatLng;
   setCircleCenter: React.Dispatch<React.SetStateAction<LatLng>>;
   onStatusChange: (s: { loading: boolean; count: number; error: string | null }) => void;
+  onPopulationChange: (s: { loading: boolean; population: number | null; error: string | null }) => void;
 }) {
   const [signals, setSignals] = React.useState<LatLng[]>([]);
+  const popCtrlRef = React.useRef<AbortController | null>(null);
 
+  // Traffic signals lookup
   React.useEffect(() => {
     const ctrl = new AbortController();
     onStatusChange({ loading: true, count: signals.length, error: null });
@@ -145,9 +195,47 @@ export default function Maps({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [circleCenter, radiusMeters]);
 
+  // Population lookup (WorldPop)
+  React.useEffect(() => {
+    // Abort any in-flight population request
+    popCtrlRef.current?.abort();
+    const ctrl = new AbortController();
+    popCtrlRef.current = ctrl;
+
+    onPopulationChange({ loading: true, population: null, error: null });
+
+    const t = setTimeout(() => {
+      let geojson: any;
+      try {
+        geojson = circleToGeoJSON(circleCenter, radiusMeters, 128);
+      } catch (e: any) {
+        onPopulationChange({ loading: false, population: null, error: String(e?.message ?? e) });
+        return;
+      }
+
+      fetchWorldPopPopulation(geojson, 2020, ctrl.signal)
+        .then((out) => {
+          const pop = typeof out.total_population === 'number' ? out.total_population : null;
+          onPopulationChange({ loading: false, population: pop, error: null });
+        })
+        .catch((e) => {
+          if (e?.name === 'AbortError') return;
+          onPopulationChange({ loading: false, population: null, error: String(e?.message ?? e) });
+        });
+    }, 450);
+
+    return () => {
+      clearTimeout(t);
+      ctrl.abort();
+    };
+  }, [circleCenter, radiusMeters, onPopulationChange]);
+
   return (
     <div style={{ width: '100%', height: '100%' }}>
-      <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}>
+      <APIProvider
+        apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}
+        libraries={['geometry']} // REQUIRED for computeOffset
+      >
         <Map
           mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID}
           defaultZoom={13}
