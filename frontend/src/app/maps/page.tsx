@@ -107,10 +107,9 @@ export default function Page() {
     lng: -84.38633,
   });
 
-  const [avgCpuUtil, setAvgCpuUtil] = React.useState(0.5);
-  const [avgGpuUtil, setAvgGpuUtil] = React.useState(0.5);
+  const [avgCpuUtil, setAvgCpuUtil] = React.useState(0.85);
+  const [avgGpuUtil, setAvgGpuUtil] = React.useState(0.85);
   const [availableMachines, setAvailableMachines] = React.useState(100);
-  const [avgMachineLoad, setAvgMachineLoad] = React.useState(0.7);
 
   const [wattageLoading, setWattageLoading] = React.useState(false);
   const [wattage, setWattage] = React.useState<number | null>(null);
@@ -198,7 +197,6 @@ export default function Page() {
   const debouncedAvgCpuUtil = useDebouncedValue(avgCpuUtil, 500);
   const debouncedAvgGpuUtil = useDebouncedValue(avgGpuUtil, 500);
   const debouncedAvailableMachines = useDebouncedValue(availableMachines, 500);
-  const debouncedAvgMachineLoad = useDebouncedValue(avgMachineLoad, 500);
 
   React.useEffect(() => {
     const ctrl = new AbortController();
@@ -212,7 +210,6 @@ export default function Page() {
         avg_cpu_util: debouncedAvgCpuUtil,
         avg_gpu_util: debouncedAvgGpuUtil,
         active_machines: debouncedAvailableMachines,
-        machine_load_1_mean: debouncedAvgMachineLoad,
       }),
       signal: ctrl.signal,
     })
@@ -230,7 +227,8 @@ export default function Page() {
         if (typeof data?.Wattage !== 'number' || Number.isNaN(data.Wattage)) {
           throw new Error('Unexpected response format');
         }
-        setWattage(data.Wattage);
+        console.log('Wattage from backend:', data.Wattage);
+        setWattage(data.Wattage / 1000); // Convert Wh to kWh
         setWattageLoading(false);
       })
       .catch((e) => {
@@ -241,7 +239,7 @@ export default function Page() {
       });
 
     return () => ctrl.abort();
-  }, [debouncedAvgCpuUtil, debouncedAvgGpuUtil, debouncedAvailableMachines, debouncedAvgMachineLoad]);
+  }, [debouncedAvgCpuUtil, debouncedAvgGpuUtil, debouncedAvailableMachines]);
 
   return (
     <div className="min-h-screen pt-20" style={{ background: '#f0fdf4', color: '#064e3b' }}>
@@ -318,20 +316,11 @@ export default function Page() {
             />
           </div>
 
-          <div style={{ marginTop: 10, fontSize: 12 }}>
-            Avg Machine Load
-            <input
-              type="number"
-              step="0.01"
-              value={avgMachineLoad}
-              onChange={(e) => setAvgMachineLoad(Number(e.target.value))}
-              style={{ width: '100%', marginTop: 4, padding: '4px', border: '1px solid #d1fae5', borderRadius: '4px' }}
-            />
-          </div>
+
 
           <div style={{ marginTop: 12, fontSize: 12, padding: '8px', background: '#ecfdf5', borderRadius: '8px' }}>
             <div style={{ fontWeight: 700, color: '#059669' }}>Predicted Wattage</div>
-            {wattageLoading ? 'Predicting…' : wattage == null ? '—' : `${wattage.toFixed(2)} W`}
+            {wattageLoading ? 'Predicting…' : wattage == null ? '—' : `${wattage.toFixed(2)} kWh`}
             {wattageError && <div style={{ color: '#ef4444' }}>Error: {wattageError}</div>}
           </div>
 
@@ -413,7 +402,7 @@ export default function Page() {
           >
             <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, color: '#059669' }}>Total kWh Offloaded</div>
             <div style={{ fontSize: 32, fontWeight: 700, color: '#064e3b' }}>
-              {(availableMachines * avgMachineLoad * 0.8).toFixed(1)} kWh
+              {(availableMachines * 0.8).toFixed(1)} kWh
             </div>
           </div>
         </div>
