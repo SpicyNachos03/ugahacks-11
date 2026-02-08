@@ -1,6 +1,7 @@
 import os
 from flask import Blueprint, jsonify, request
 from joblib import load as joblib_load
+import pandas as pd
 
 api = Blueprint("api", __name__)
 
@@ -25,26 +26,28 @@ def health():
 @api.post("/wattage")
 def predict_wattage():
     """
-    Expects JSON: avg_cpu_util, active_machines, machine_load_1_mean, avg_gpu_util.
+    Expects JSON with features the model was trained on (e.g. avg_cpu_util, active_machines, avg_gpu_util).
+    Optional: machine_load_1_mean. Uses model.feature_names_in_ so columns always match fit.
     Returns { "Wattage": number }.
     """
     data = request.get_json(silent=True) or {}
-    required = ("avg_cpu_util", "active_machines", "machine_load_1_mean", "avg_gpu_util")
-    missing = [k for k in required if k not in data]
+    model = _get_model()
+    # Use the model's actual feature names from training (order matters)
+    _names = getattr(model, "feature_names_in_", None)
+    if _names is None or len(_names) == 0:
+        feature_names = ("avg_cpu_util", "active_machines", "avg_gpu_util")
+    else:
+        feature_names = list(_names)
+    missing = [k for k in feature_names if k not in data]
     if missing:
-        return jsonify({"error": f"Missing keys: {missing}"}), 400
+        return jsonify({"error": f"Missing keys: {list(missing)}"}), 400
 
     try:
-        avg_cpu_util = float(data["avg_cpu_util"])
-        active_machines = float(data["active_machines"])
-        machine_load_1_mean = float(data["machine_load_1_mean"])
-        avg_gpu_util = float(data["avg_gpu_util"])
+        row = [float(data[name]) for name in feature_names]
     except (TypeError, ValueError) as e:
         return jsonify({"error": f"Invalid numeric values: {e}"}), 400
 
-    # Feature order must match training: avg_cpu_util, active_machines, machine_load_1_mean, avg_gpu_util
-    X = [[avg_cpu_util, active_machines, machine_load_1_mean, avg_gpu_util]]
-    model = _get_model()
+    X = pd.DataFrame([row], columns=feature_names)
     wattage = float(model.predict(X)[0])
 
     return jsonify({"Wattage": wattage})
