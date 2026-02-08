@@ -348,32 +348,6 @@ export default function Page() {
   ]);
   return (
     <div className="min-h-screen pt-20" style={{ background: '#f0fdf4', color: '#064e3b' }}>
-      <style jsx>{`
-  @keyframes pulse-border {
-    0% { border-color: #10b981; box-shadow: 0 0 0 0px rgba(16, 185, 129, 0.2); }
-    50% { border-color: #34d399; box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
-    100% { border-color: #10b981; box-shadow: 0 0 0 0px rgba(16, 185, 129, 0); }
-  }
-
-  .impact-card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .impact-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 20px rgba(6, 78, 59, 0.08) !important;
-  }
-
-  .stat-card {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .stat-card:hover {
-    background: #ffffff !important;
-    border-color: #10b981 !important;
-    transform: scale(1.02);
-  }
-`}</style>
       <Header />
 
       <div
