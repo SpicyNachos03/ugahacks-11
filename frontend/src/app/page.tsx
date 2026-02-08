@@ -1,7 +1,7 @@
 import { Header } from "../../components/Header";
 import { HeroSection } from "../../components/HeroSection";
 import { FeaturesSection } from "../../components/FeaturesSection";
-import { PricingSection } from "../../components/PricingSection";
+import { ImpactSection } from "../../components/ImpactSection";
 import { Footer } from "../../components/Footer";
 
 export default function App() {
@@ -11,7 +11,7 @@ export default function App() {
       <main>
         <HeroSection />
         <FeaturesSection />
-        <PricingSection />
+        <ImpactSection />
       </main>
       <Footer />
     </div>

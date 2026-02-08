@@ -13,11 +13,13 @@ export function Header() {
       <header className="w-full max-w-5xl rounded-2xl border bg-background/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto flex h-14 items-center justify-between px-6">
           <div className="flex items-center space-x-8">
+            {/* Logo and title */}
             <div className="flex items-center space-x-2">
               <div className="h-7 w-7 rounded-lg bg-primary"></div>
               <span className="font-semibold text-sm">Title Title</span>
             </div>
 
+            {/* Navigation links */}
             <nav className="hidden md:flex items-center space-x-6">
               <a
                 href="#features"
@@ -26,7 +28,6 @@ export function Header() {
                 {isOnMaps ? "Output" : "Features"}
               </a>
 
-              {/* Only show Impacts if NOT on /maps */}
               {!isOnMaps && (
                 <a
                   href="#pricing"
@@ -36,8 +37,11 @@ export function Header() {
                 </a>
               )}
 
+              {/* Github link */}
               <a
-                href="#docs"
+                href="https://github.com/SpicyNachos03/ugahacks-11"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 Github
@@ -45,6 +49,7 @@ export function Header() {
             </nav>
           </div>
 
+          {/* Button: Get Started / Home */}
           <div className="flex items-center space-x-3">
             <Button asChild size="sm" className="text-xs h-8">
               <Link href={isOnMaps ? "/" : "/maps"}>
