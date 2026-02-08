@@ -10,7 +10,7 @@ export function Footer() {
           <div className="lg:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
               <div className="h-8 w-8 rounded-lg bg-primary"></div>
-              <span className="font-semibold">Title Title</span>
+              <span className="font-semibold" >Supa Idle</span>
             </div>
             <p className="text-muted-foreground mb-6 max-w-md">
               The complete platform for maintaining and optimizing data centers
@@ -62,7 +62,7 @@ export function Footer() {
         
         <div className="flex flex-col md:flex-row justify-between items-center">
           <p className="text-sm text-muted-foreground mb-4 md:mb-0">
-            © 2026 Title Title. All rights reserved.
+            © 2026 Supa Idle. All rights reserved.
           </p>
           <div className="flex space-x-6 text-sm text-muted-foreground">
             <a href="#privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>

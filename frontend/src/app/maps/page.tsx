@@ -77,7 +77,7 @@ export default function Page() {
     lng: -84.38633,
   });
 
-  // ===== DEVICE INPUT STATE =====
+  // ===== NEW DEVICE INPUT STATE =====
   const [avgCpuUtil, setAvgCpuUtil] = React.useState(0.5);
   const [avgGpuUtil, setAvgGpuUtil] = React.useState(0.5);
   const [availableMachines, setAvailableMachines] = React.useState(100);
@@ -98,7 +98,7 @@ export default function Page() {
   const [population, setPopulation] = React.useState<number | null>(null);
   const [popError, setPopError] = React.useState<string | null>(null);
 
-  // Open-Meteo weather + AQI state
+  // Weather + AQI state
   const [meteoLoading, setMeteoLoading] = React.useState(false);
   const [meteoError, setMeteoError] = React.useState<string | null>(null);
   const [temperatureF, setTemperatureF] = React.useState<number | null>(null);
@@ -200,18 +200,27 @@ export default function Page() {
   }, [debouncedAvgCpuUtil, debouncedAvgGpuUtil, debouncedAvailableMachines, debouncedAvgMachineLoad]);
 
   return (
-    <div className="min-h-screen pt-20 bg-black flex flex-col">
+    <div className="min-h-screen pt-20" style={{ background: '#f5f5f5', color: '#333' }}>
       <Header />
 
-      <div style={{ minHeight: '100vh', display: 'flex', gap: 16, padding: 16, background: '#0b0b0f' }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: 32,
+          padding: '16px 32px',
+          height: '600px', // shorter input + map section
+        }}
+      >
+        {/* INPUT DIV */}
         <aside
           style={{
             width: 300,
             borderRadius: 16,
             padding: 16,
-            color: 'white',
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.10)',
+            background: '#fff',
+            border: '1px solid #ccc',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+            color: '#333',
           }}
         >
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>Area stats</div>
@@ -228,7 +237,7 @@ export default function Page() {
             onChange={(e) => setRadiusMeters(Number(e.target.value))}
           />
 
-          {/* ===== DEVICE METRICS ===== */}
+          {/* Device Metrics */}
           <div style={{ marginTop: 20, fontWeight: 700, fontSize: 13 }}>Device Metrics</div>
 
           <div style={{ marginTop: 10, fontSize: 12 }}>
@@ -299,18 +308,27 @@ export default function Page() {
           <div style={{ marginTop: 16, fontSize: 12 }}>
             <div style={{ fontWeight: 700 }}>Traffic signals (OSM)</div>
             {loading ? 'Searching…' : `Found: ${count}`}
-            {error && <div style={{ color: '#ffb4b4' }}>Error: {error}</div>}
+            {error && <div style={{ color: '#ff4d4f' }}>Error: {error}</div>}
           </div>
 
           {/* Population */}
           <div style={{ marginTop: 12, fontSize: 12 }}>
             <div style={{ fontWeight: 700 }}>Population (WorldPop)</div>
             {popLoading ? 'Estimating…' : population?.toLocaleString() ?? '—'}
-            {popError && <div style={{ color: '#ffb4b4' }}>Error: {popError}</div>}
+            {popError && <div style={{ color: '#ff4d4f' }}>Error: {popError}</div>}
           </div>
         </aside>
 
-        <div style={{ flex: 1, borderRadius: 16, overflow: 'hidden' }}>
+        {/* MAP DIV */}
+        <div
+          style={{
+            flex: 1,
+            borderRadius: 16,
+            overflow: 'hidden',
+            border: '1px solid #ccc',
+            background: '#e6e6e6',
+          }}
+        >
           <Maps
             radiusMeters={radiusMeters}
             setRadiusMeters={setRadiusMeters}
@@ -322,53 +340,144 @@ export default function Page() {
         </div>
       </div>
 
+      {/* OUTPUT SECTION */}
       {/* ===== OUTPUT SECTION ===== */}
+<div
+  style={{
+    marginLeft: 70,
+    marginRight: 70,
+    marginTop: 32,
+    marginBottom: 50,
+    padding: 16,
+    borderRadius: 16,
+    background: '#fff',
+    color: '#333',
+    border: '1px solid #ccc',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+  }}
+>
+  <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Output</h2>
+
+  {/* Top Row: 2 Cards */}
+  <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
+    <div
+      style={{
+        flex: 1,
+        padding: 16,
+        borderRadius: 12,
+        background: '#f0f0f0',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+        textAlign: 'center',
+      }}
+    >
+      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>Possible Offload</div>
+      <div style={{ fontSize: 24, fontWeight: 700 }}>{((avgCpuUtil + avgGpuUtil) / 2 * 100).toFixed(1)}%</div>
+    </div>
+
+    <div
+      style={{
+        flex: 1,
+        padding: 16,
+        borderRadius: 12,
+        background: '#f0f0f0',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+        textAlign: 'center',
+      }}
+    >
+      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>Total kmh Offloaded</div>
+      <div style={{ fontSize: 24, fontWeight: 700 }}>
+        {(availableMachines * avgMachineLoad * 0.8).toFixed(1)} kmh
+      </div>
+    </div>
+  </div>
+
+  {/* Bottom Row: 5 Cards */}
+  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+    {[
+      { label: '# of Traffic Lights', value: count },
+      { label: '# of Phones', value: 1200 },
+      { label: '# of Laptops', value: 450 },
+      { label: '# of Desktops', value: 320 },
+      { label: '# of House Appliances', value: 780 },
+    ].map((item) => (
       <div
+        key={item.label}
         style={{
-          margin: 24,
-          padding: 16,
-          borderRadius: 16,
-          background: 'rgba(255, 255, 255, 0.06)',
-          color: 'white',
-          border: '1px solid rgba(255,255,255,0.10)',
+          flex: 1,
+          minWidth: 120,
+          padding: 12,
+          borderRadius: 12,
+          background: '#f9f9f9',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+          textAlign: 'center',
         }}
       >
-        <h2 style={{ fontSize: 16, fontWeight: 700 }}>Output</h2>
-        <div style={{ marginTop: 8, fontSize: 14 }}>
-          Found {count} traffic signals and {population?.toLocaleString() ?? '—'} people within {radiusMeters} meters.
-          <br />
-          <br />
-          <b>Device Inputs:</b>
-          <br />
-          avg_cpu_util: {avgCpuUtil.toFixed(2)}
-          <br />
-          avg_gpu_util: {avgGpuUtil.toFixed(2)}
-          <br />
-          available_machines: {availableMachines}
-          <br />
-          average_machine_load: {avgMachineLoad.toFixed(2)}
-          <br />
-          <br />
-          <b>Predicted Wattage:</b>
-          <br />
-          {wattageLoading ? 'Predicting…' : wattage == null ? '—' : `${wattage.toFixed(2)} W`}
-          {wattageError && (
-            <>
-              <br />
-              <span style={{ color: '#ffb4b4' }}>Error: {wattageError}</span>
-            </>
-          )}
-          <br />
-          <br />
-          <b>Weather + AQI:</b>
-          <br />
-          Temperature: {temperatureF == null ? '—' : `${temperatureF.toFixed(1)} °F`}
-          <br />
-          Humidity: {humidityPct == null ? '—' : `${Math.round(humidityPct)}%`}
-          <br />
-          AQI: {aqi == null ? '—' : Math.round(aqi)}
-        </div>
+        <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 6 }}>{item.label}</div>
+        <div style={{ fontSize: 18, fontWeight: 700 }}>{item.value}</div>
       </div>
+    ))}
+  </div>
+
+    {/* ===== COST SAVING & ENVIRONMENTAL IMPACT ROW ===== */}
+<div style={{ display: 'flex', gap: 16, marginTop: 16, flexWrap: 'wrap' }}>
+  {[
+    { 
+      label: 'Cost Saving', 
+      metrics: [
+        { label: 'Fuel Saved', value: '1200 L' },
+        { label: 'Electricity Saved', value: '450 kWh' },
+        { label: 'Maintenance', value: '$320' },
+        { label: 'Operational Cost', value: '$780' },
+      ],
+    },
+    { 
+      label: 'Environmental Impact', 
+      metrics: [
+        { label: 'CO2 Reduced', value: '1.2 t' },
+        { label: 'Water Saved', value: '500 L' },
+        { label: 'Waste Reduced', value: '120 kg' },
+        { label: 'Recycling', value: '80%' },
+      ],
+    },
+  ].map((section) => (
+    <div
+      key={section.label}
+      style={{
+        flex: 1,
+        minWidth: 280,
+        padding: 16,
+        borderRadius: 12,
+        background: '#f0f0f0',
+        boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+      }}
+    >
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, textAlign: 'center' }}>
+        {section.label}
+      </div>
+
+      {/* Inner 2x2 grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        {section.metrics.map((metric) => (
+          <div
+            key={metric.label}
+            style={{
+              padding: 12,
+              borderRadius: 10,
+              background: '#ffffff',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 6 }}>{metric.label}</div>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>{metric.value}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  ))}
+</div>
+
+    </div>
     </div>
   );
 }
