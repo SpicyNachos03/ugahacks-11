@@ -10,7 +10,7 @@ export function Footer() {
           <div className="lg:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
               <div className="h-8 w-8 rounded-lg bg-primary"></div>
-              <span className="font-semibold font-serif" >Supa Idle</span>
+              <span className="font-semibold" >Supa Idle</span>
             </div>
             <p className="text-muted-foreground mb-6 max-w-md">
               The complete platform for maintaining and optimizing data centers
