@@ -77,28 +77,23 @@ export default function Page() {
     lng: -84.38633,
   });
 
-  // ===== NEW DEVICE INPUT STATE =====
   const [avgCpuUtil, setAvgCpuUtil] = React.useState(0.5);
   const [avgGpuUtil, setAvgGpuUtil] = React.useState(0.5);
   const [availableMachines, setAvailableMachines] = React.useState(100);
   const [avgMachineLoad, setAvgMachineLoad] = React.useState(0.7);
 
-  // ===== WATTAGE STATE (NEW) =====
   const [wattageLoading, setWattageLoading] = React.useState(false);
   const [wattage, setWattage] = React.useState<number | null>(null);
   const [wattageError, setWattageError] = React.useState<string | null>(null);
 
-  // Traffic signals state
   const [loading, setLoading] = React.useState(false);
   const [count, setCount] = React.useState(0);
   const [error, setError] = React.useState<string | null>(null);
 
-  // Population state
   const [popLoading, setPopLoading] = React.useState(false);
   const [population, setPopulation] = React.useState<number | null>(null);
   const [popError, setPopError] = React.useState<string | null>(null);
 
-  // Weather + AQI state
   const [meteoLoading, setMeteoLoading] = React.useState(false);
   const [meteoError, setMeteoError] = React.useState<string | null>(null);
   const [temperatureF, setTemperatureF] = React.useState<number | null>(null);
@@ -149,7 +144,6 @@ export default function Page() {
     return () => ctrl.abort();
   }, [debouncedCenter.lat, debouncedCenter.lng]);
 
-  // ===== WATTAGE POST (NEW) =====
   const debouncedAvgCpuUtil = useDebouncedValue(avgCpuUtil, 500);
   const debouncedAvgGpuUtil = useDebouncedValue(avgGpuUtil, 500);
   const debouncedAvailableMachines = useDebouncedValue(availableMachines, 500);
@@ -157,7 +151,6 @@ export default function Page() {
 
   React.useEffect(() => {
     const ctrl = new AbortController();
-
     setWattageLoading(true);
     setWattageError(null);
 
@@ -184,7 +177,7 @@ export default function Page() {
       })
       .then((data: any) => {
         if (typeof data?.Wattage !== 'number' || Number.isNaN(data.Wattage)) {
-          throw new Error('Unexpected response format (expected { Wattage: number })');
+          throw new Error('Unexpected response format');
         }
         setWattage(data.Wattage);
         setWattageLoading(false);
@@ -200,7 +193,7 @@ export default function Page() {
   }, [debouncedAvgCpuUtil, debouncedAvgGpuUtil, debouncedAvailableMachines, debouncedAvgMachineLoad]);
 
   return (
-    <div className="min-h-screen pt-20" style={{ background: '#f5f5f5', color: '#333' }}>
+    <div className="min-h-screen pt-20" style={{ background: '#f0fdf4', color: '#064e3b' }}>
       <Header />
 
       <div
@@ -208,7 +201,7 @@ export default function Page() {
           display: 'flex',
           gap: 32,
           padding: '16px 32px',
-          height: '600px', // shorter input + map section
+          height: '600px',
         }}
       >
         {/* INPUT DIV */}
@@ -217,18 +210,17 @@ export default function Page() {
             width: 300,
             borderRadius: 16,
             padding: 16,
-            background: '#fff',
-            border: '1px solid #ccc',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-            color: '#333',
+            background: '#ffffff',
+            border: '1px solid #d1fae5',
+            boxShadow: '0 4px 12px rgba(6, 78, 59, 0.05)',
+            color: '#064e3b',
           }}
         >
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>Area stats</div>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10, color: '#059669' }}>Area stats</div>
 
-          {/* Radius */}
           <div style={{ fontSize: 12, opacity: 0.85 }}>Radius: {radiusMeters} m</div>
           <input
-            style={{ width: '100%' }}
+            style={{ width: '100%', accentColor: '#10b981' }}
             type="range"
             min={100}
             max={10000}
@@ -237,8 +229,7 @@ export default function Page() {
             onChange={(e) => setRadiusMeters(Number(e.target.value))}
           />
 
-          {/* Device Metrics */}
-          <div style={{ marginTop: 20, fontWeight: 700, fontSize: 13 }}>Device Metrics</div>
+          <div style={{ marginTop: 20, fontWeight: 700, fontSize: 13, color: '#059669' }}>Device Metrics</div>
 
           <div style={{ marginTop: 10, fontSize: 12 }}>
             CPU Utilization: {avgCpuUtil.toFixed(2)}
@@ -249,7 +240,7 @@ export default function Page() {
               step={0.01}
               value={avgCpuUtil}
               onChange={(e) => setAvgCpuUtil(Number(e.target.value))}
-              style={{ width: '100%' }}
+              style={{ width: '100%', accentColor: '#10b981' }}
             />
           </div>
 
@@ -262,7 +253,7 @@ export default function Page() {
               step={0.01}
               value={avgGpuUtil}
               onChange={(e) => setAvgGpuUtil(Number(e.target.value))}
-              style={{ width: '100%' }}
+              style={{ width: '100%', accentColor: '#10b981' }}
             />
           </div>
 
@@ -272,7 +263,7 @@ export default function Page() {
               type="number"
               value={availableMachines}
               onChange={(e) => setAvailableMachines(Number(e.target.value))}
-              style={{ width: '100%', marginTop: 4 }}
+              style={{ width: '100%', marginTop: 4, padding: '4px', border: '1px solid #d1fae5', borderRadius: '4px' }}
             />
           </div>
 
@@ -283,139 +274,134 @@ export default function Page() {
               step="0.01"
               value={avgMachineLoad}
               onChange={(e) => setAvgMachineLoad(Number(e.target.value))}
-              style={{ width: '100%', marginTop: 4 }}
+              style={{ width: '100%', marginTop: 4, padding: '4px', border: '1px solid #d1fae5', borderRadius: '4px' }}
             />
           </div>
 
-          {/* ===== WATTAGE DISPLAY (NEW) ===== */}
-          <div style={{ marginTop: 12, fontSize: 12 }}>
-            <div style={{ fontWeight: 700 }}>Predicted Wattage</div>
+          <div style={{ marginTop: 12, fontSize: 12, padding: '8px', background: '#ecfdf5', borderRadius: '8px' }}>
+            <div style={{ fontWeight: 700, color: '#059669' }}>Predicted Wattage</div>
             {wattageLoading ? 'Predicting…' : wattage == null ? '—' : `${wattage.toFixed(2)} W`}
-            {wattageError && <div style={{ color: '#ffb4b4' }}>Error: {wattageError}</div>}
+            {wattageError && <div style={{ color: '#ef4444' }}>Error: {wattageError}</div>}
           </div>
 
-          {/* Weather + AQI */}
           <div style={{ marginTop: 16, fontSize: 12 }}>
-            <div style={{ fontWeight: 700 }}>Weather + Air Quality</div>
-            <div>Temperature (°F): {temperatureF == null ? '—' : `${temperatureF.toFixed(1)} °F`}</div>
-            <div>Humidity (%): {humidityPct == null ? '—' : `${Math.round(humidityPct)}%`}</div>
-            <div>Air Quality Index (US AQI): {aqi == null ? '—' : Math.round(aqi)}</div>
+            <div style={{ fontWeight: 700, color: '#059669' }}>Weather + Air Quality</div>
+            <div>Temp: {temperatureF == null ? '—' : `${temperatureF.toFixed(1)} °F`}</div>
+            <div>Humidity: {humidityPct == null ? '—' : `${Math.round(humidityPct)}%`}</div>
+            <div>AQI: {aqi == null ? '—' : Math.round(aqi)}</div>
             <div style={{ fontSize: 11, opacity: 0.7 }}>{meteoLoading ? 'Updating…' : 'Updated'}</div>
-            {meteoError && <div style={{ color: '#ffb4b4' }}>Error: {meteoError}</div>}
-          </div>
-
-          {/* Population */}
-          <div style={{ marginTop: 12, fontSize: 12 }}>
-            <div style={{ fontWeight: 700 }}>Population (WorldPop)</div>
-            {popLoading ? 'Estimating…' : population?.toLocaleString() ?? '—'}
-            {popError && <div style={{ color: '#ff4d4f' }}>Error: {popError}</div>}
           </div>
         </aside>
 
         {/* MAP DIV */}
-        <div
-          style={{
-            flex: 1,
-            borderRadius: 16,
-            overflow: 'hidden',
-            border: '1px solid #ccc',
-            background: '#e6e6e6',
-          }}
-        >
-          <Maps
-            radiusMeters={radiusMeters}
-            setRadiusMeters={setRadiusMeters}
-            circleCenter={circleCenter}
-            setCircleCenter={setCircleCenter}
-            onStatusChange={handleStatusChange}
-            onPopulationChange={handlePopulationChange}
-          />
-        </div>
+        {/* MAP DIV WRAPPER */}
+<div
+  className="relative flex-1 rounded-2xl overflow-hidden border border-emerald-100 shadow-xl bg-gradient-to-b from-emerald-50 via-white to-white"
+  style={{
+    height: '100%',
+  }}
+>
+  {/* Decorative Background Blobs - These sit behind the map */}
+  <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-50">
+    <div className="absolute top-0 left-1/4 w-64 h-64 bg-emerald-400/20 rounded-full blur-3xl"></div>
+    <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-green-400/20 rounded-full blur-3xl"></div>
+  </div>
+
+  <div className="relative z-10 h-full w-full">
+    <Maps
+      radiusMeters={radiusMeters}
+      setRadiusMeters={setRadiusMeters}
+      circleCenter={circleCenter}
+      setCircleCenter={setCircleCenter}
+      onStatusChange={handleStatusChange}
+      onPopulationChange={handlePopulationChange}
+    />
+  </div>
+</div>
       </div>
 
       {/* OUTPUT SECTION */}
-      {/* ===== OUTPUT SECTION ===== */}
       <div
         style={{
-          marginLeft: 70,
-          marginRight: 70,
-          marginTop: 32,
-          marginBottom: 50,
-          padding: 16,
-          borderRadius: 16,
-          background: '#fff',
-          color: '#333',
-          border: '1px solid #ccc',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+          margin: '32px 70px 50px 70px',
+          padding: 24,
+          borderRadius: 24,
+          background: '#ffffff',
+          color: '#064e3b',
+          border: '1px solid #d1fae5',
+          boxShadow: '0 10px 25px rgba(6, 78, 59, 0.05)',
         }}
       >
-        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Output</h2>
+        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 24, color: '#059669' }}>Sustainability Impact Output</h2>
 
-        {/* Top Row: 2 Cards */}
+        {/* Top Row */}
         <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
           <div
             style={{
               flex: 1,
-              padding: 16,
-              borderRadius: 12,
-              background: '#f0f0f0',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+              padding: 20,
+              borderRadius: 16,
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              color: 'white',
               textAlign: 'center',
             }}
           >
-            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>Possible Offload</div>
-            <div style={{ fontSize: 24, fontWeight: 700 }}>{((avgCpuUtil + avgGpuUtil) / 2 * 100).toFixed(1)}%</div>
+            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, opacity: 0.9 }}>Possible Offload</div>
+            <div style={{ fontSize: 32, fontWeight: 700 }}>{((avgCpuUtil + avgGpuUtil) / 2 * 100).toFixed(1)}%</div>
           </div>
 
           <div
             style={{
               flex: 1,
-              padding: 16,
-              borderRadius: 12,
-              background: '#f0f0f0',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+              padding: 20,
+              borderRadius: 16,
+              background: '#ecfdf5',
+              border: '1px solid #10b981',
               textAlign: 'center',
             }}
           >
-            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>Total kmh Offloaded</div>
-            <div style={{ fontSize: 24, fontWeight: 700 }}>
-              {(availableMachines * avgMachineLoad * 0.8).toFixed(1)} kmh
+            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, color: '#059669' }}>Total kWh Offloaded</div>
+            <div style={{ fontSize: 32, fontWeight: 700, color: '#064e3b' }}>
+              {(availableMachines * avgMachineLoad * 0.8).toFixed(1)} kWh
             </div>
           </div>
         </div>
 
-  {/* Bottom Row: 5 Cards */}
-  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-    {[
-      { label: '# of Traffic Lights', value: count * 5},
-      { label: '# of Phones', value: 1200 },
-      { label: '# of Laptops', value: 450 },
-      { label: '# of Desktops', value: 320 },
-      { label: '# of House Appliances', value: 780 },
-    ].map((item) => (
-      <div
-        key={item.label}
-        style={{
-          flex: 1,
-          minWidth: 120,
-          padding: 12,
-          borderRadius: 12,
-          background: '#f9f9f9',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
-          textAlign: 'center',
-        }}
-      >
-        <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 6 }}>{item.label}</div>
-        <div style={{ fontSize: 18, fontWeight: 700 }}>{item.value}</div>
-      </div>
-    ))}
-  </div>
+        {/* Device Grid */}
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
+          {[
+            { label: 'Traffic Lights', value: count * 5 },
+            { label: 'Phones', value: 1200 },
+            { label: 'Laptops', value: 450 },
+            { label: 'Desktops', value: 320 },
+            { label: 'House Appliances', value: 780 },
+          ].map((item) => (
+            <div
+              key={item.label}
+              style={{
+                flex: 1,
+                minWidth: 140,
+                padding: 16,
+                borderRadius: 16,
+                background: '#ffffff',
+                border: '1px solid #f0fdf4',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                textAlign: 'center',
+              }}
+            >
+              <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 6, color: '#6b7280' }}>{item.label}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: '#059669' }}>{item.value}</div>
+            </div>
+          ))}
+        </div>
 
-        {/* ===== COST SAVING & ENVIRONMENTAL IMPACT ROW ===== */}
+        {/* Impact Rows */}
         <div style={{ display: 'flex', gap: 16, marginTop: 16, flexWrap: 'wrap' }}>
           {[
             {
               label: 'Cost Saving',
+              color: '#059669',
+              bg: '#f0fdf4',
               metrics: [
                 { label: 'Fuel Saved', value: '1200 L' },
                 { label: 'Electricity Saved', value: '450 kWh' },
@@ -425,6 +411,8 @@ export default function Page() {
             },
             {
               label: 'Environmental Impact',
+              color: '#10b981',
+              bg: '#ecfdf5',
               metrics: [
                 { label: 'CO2 Reduced', value: '1.2 t' },
                 { label: 'Water Saved', value: '500 L' },
@@ -437,133 +425,61 @@ export default function Page() {
               key={section.label}
               style={{
                 flex: 1,
-                minWidth: 280,
-                padding: 16,
-                borderRadius: 12,
-                background: '#f0f0f0',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+                minWidth: 300,
+                padding: 20,
+                borderRadius: 20,
+                background: section.bg,
+                border: `1px solid ${section.bg === '#f0fdf4' ? '#d1fae5' : '#a7f3d0'}`,
               }}
             >
-              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, textAlign: 'center' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, color: section.color }}>
                 {section.label}
               </div>
-
-              {/* Inner 2x2 grid */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 {section.metrics.map((metric) => (
                   <div
                     key={metric.label}
                     style={{
-                      padding: 12,
-                      borderRadius: 10,
+                      padding: 14,
+                      borderRadius: 12,
                       background: '#ffffff',
-                      boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
                       textAlign: 'center',
+                      boxShadow: '0 2px 4px rgba(6, 78, 59, 0.03)',
                     }}
                   >
-                    <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 6 }}>{metric.label}</div>
-                    <div style={{ fontSize: 16, fontWeight: 700 }}>{metric.value}</div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', marginBottom: 4 }}>{metric.label}</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: '#064e3b' }}>{metric.value}</div>
                   </div>
                 ))}
               </div>
             </div>
           ))}
         </div>
-        {/* ===== 1/3 + 2/3 ROW ===== */}
-        <div style={{ display: 'flex', gap: 16, marginTop: 16, alignItems: 'stretch' }}>
-          {/* ===== LEFT: 1/3 (STACKS DOWN, DOES NOT GROW RIGHT) ===== */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16, minWidth: 280 }}>
-            {/* ===== WEATHER & AIR QUALITY (mapped small cards) ===== */}
-            <div
-              style={{
-                padding: 16,
-                borderRadius: 12,
-                background: '#f0f0f0',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
-              }}
-            >
-              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, textAlign: 'center' }}>
-                Weather + Air Quality
-              </div>
 
-              {/* Inner grid: forces wrapping inside the left column (no horizontal expansion) */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {[
-                  {
-                    label: 'Temperature',
-                    value: temperatureF == null ? '—' : `${temperatureF.toFixed(1)} °F`,
-                  },
-                  {
-                    label: 'Humidity',
-                    value: humidityPct == null ? '—' : `${Math.round(humidityPct)}%`,
-                  },
-                  {
-                    label: 'Air Quality (US AQI)',
-                    value: aqi == null ? '—' : `${Math.round(aqi)}`,
-                  },
-                ].map((metric) => (
-                  <div
-                    key={metric.label}
-                    style={{
-                      padding: 12,
-                      borderRadius: 10,
-                      background: '#ffffff',
-                      boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
-                      textAlign: 'center',
-                    }}
-                  >
-                    <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 6 }}>{metric.label}</div>
-                    <div style={{ fontSize: 16, fontWeight: 700 }}>{metric.value}</div>
-                  </div>
-                ))}
+        {/* Gemini & Weather Grid */}
+        <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {[
+              { label: 'Temperature', value: temperatureF == null ? '—' : `${temperatureF.toFixed(1)} °F` },
+              { label: 'Humidity', value: humidityPct == null ? '—' : `${Math.round(humidityPct)}%` },
+              { label: 'US AQI', value: aqi == null ? '—' : `${Math.round(aqi)}` },
+            ].map((m) => (
+              <div key={m.label} style={{ padding: 16, borderRadius: 16, background: '#f8fafc', border: '1px solid #f1f5f9', textAlign: 'center' }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#64748b' }}>{m.label}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: '#334155' }}>{m.value}</div>
               </div>
-            </div>
-
-            {/* (optional) add more left-column cards here later; they will stack vertically */}
+            ))}
           </div>
 
-          {/* ===== RIGHT: 2/3 ===== */}
-          <div style={{ flex: 2, minWidth: 0, display: 'flex' }}>
-            <div
-              style={{
-                flex: 1,
-                padding: 16,
-                borderRadius: 12,
-                background: '#f0f0f0',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
-              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, textAlign: 'center' }}>
-                Gemini Weather Analysis
-              </div>
-
-              <div
-                style={{
-                  flex: 1,
-                  padding: 12,
-                  borderRadius: 10,
-                  background: '#ffffff',
-                  boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                }}
-              >
-                <div style={{ fontSize: 13, lineHeight: 1.6, color: '#333' }}>
-                  <p style={{ marginBottom: 8 }}>
-                    It's quite cold at 33.4 °F, so bundle up if you're heading outdoors. Frost conditions are likely.
-                  </p>
-                  <p style={{ marginBottom: 8 }}>
-                    The humidity is relatively low at 34%, which means the air is quite dry. This could make skin and respiratory conditions feel more pronounced.
-                  </p>
-                  <p>
-                    Air quality is excellent with an AQI of 29, indicating clean air and good conditions for outdoor activities.
-                  </p>
-                </div>
-              </div>
-            </div>
+          <div style={{ flex: 2, padding: 24, borderRadius: 24, background: '#ffffff', border: '2px solid #10b981', position: 'relative' }}>
+             <div style={{ position: 'absolute', top: -12, left: 24, background: '#10b981', color: 'white', padding: '2px 12px', borderRadius: '12px', fontSize: 12, fontWeight: 700 }}>
+                AI INSIGHT
+             </div>
+             <div style={{ fontSize: 15, lineHeight: 1.7, color: '#064e3b' }}>
+                <p style={{ marginBottom: 12 }}><b>Atmospheric Analysis:</b> It's quite cold at 33.4 °F. Cooling systems are currently running at peak efficiency due to the low ambient temperature.</p>
+                <p style={{ marginBottom: 12 }}><b>Dry Air Warning:</b> Humidity is low (34%). Ensure static protection is active for high-density hardware offloading.</p>
+                <p><b>Green Signal:</b> Excellent AQI (29) allows for maximum hardware lifespan and reduced filter maintenance during this cycle.</p>
+             </div>
           </div>
         </div>
       </div>
