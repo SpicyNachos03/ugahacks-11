@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { ArrowRight, Play, Monitor, Lightbulb, Zap, Library, Home } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 
 export function HeroSection() {
   const sceneRef = useRef<HTMLDivElement>(null);
@@ -56,9 +57,16 @@ export function HeroSection() {
       </div>
 
       <div className="container mx-auto px-4 text-center relative z-10">
-        <Badge variant="secondary" className="mb-6 bg-emerald-100 text-emerald-700 border-emerald-200">
-          🎉 Reducing Carboon Footprint through Idle Machines
-        </Badge>
+<div className="overflow-hidden h-32 flex items-center justify-center">
+    <Image 
+      src="/Supa_Idle.png" 
+      alt="Supa Idle Logo" 
+      width={450} // Make it large
+      height={150}
+      priority 
+      className="object-contain transform scale-100" // Zoom in to fill the "window"
+    />
+  </div>
         <h1 className="mx-auto max-w-4xl text-4xl md:text-6xl lg:text-7xl tracking-tight mb-6 text-emerald-950">
           Build sustainable{" "}
           <span className="bg-gradient-to-r from-emerald-600 to-green-500 bg-clip-text text-transparent">
