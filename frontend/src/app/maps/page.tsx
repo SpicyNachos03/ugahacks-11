@@ -304,13 +304,6 @@ export default function Page() {
             {meteoError && <div style={{ color: '#ffb4b4' }}>Error: {meteoError}</div>}
           </div>
 
-          {/* Traffic signals */}
-          <div style={{ marginTop: 16, fontSize: 12 }}>
-            <div style={{ fontWeight: 700 }}>Traffic signals (OSM)</div>
-            {loading ? 'Searching…' : `Found: ${count}`}
-            {error && <div style={{ color: '#ff4d4f' }}>Error: {error}</div>}
-          </div>
-
           {/* Population */}
           <div style={{ marginTop: 12, fontSize: 12 }}>
             <div style={{ fontWeight: 700 }}>Population (WorldPop)</div>
@@ -394,7 +387,7 @@ export default function Page() {
   {/* Bottom Row: 5 Cards */}
   <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
     {[
-      { label: '# of Traffic Lights', value: count },
+      { label: '# of Traffic Lights', value: count * 5},
       { label: '# of Phones', value: 1200 },
       { label: '# of Laptops', value: 450 },
       { label: '# of Desktops', value: 320 },
