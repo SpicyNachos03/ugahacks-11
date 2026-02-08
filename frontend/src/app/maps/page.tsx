@@ -335,54 +335,54 @@ export default function Page() {
 
       {/* OUTPUT SECTION */}
       {/* ===== OUTPUT SECTION ===== */}
-<div
-  style={{
-    marginLeft: 70,
-    marginRight: 70,
-    marginTop: 32,
-    marginBottom: 50,
-    padding: 16,
-    borderRadius: 16,
-    background: '#fff',
-    color: '#333',
-    border: '1px solid #ccc',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-  }}
->
-  <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Output</h2>
+      <div
+        style={{
+          marginLeft: 70,
+          marginRight: 70,
+          marginTop: 32,
+          marginBottom: 50,
+          padding: 16,
+          borderRadius: 16,
+          background: '#fff',
+          color: '#333',
+          border: '1px solid #ccc',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+        }}
+      >
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Output</h2>
 
-  {/* Top Row: 2 Cards */}
-  <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
-    <div
-      style={{
-        flex: 1,
-        padding: 16,
-        borderRadius: 12,
-        background: '#f0f0f0',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-        textAlign: 'center',
-      }}
-    >
-      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>Possible Offload</div>
-      <div style={{ fontSize: 24, fontWeight: 700 }}>{((avgCpuUtil + avgGpuUtil) / 2 * 100).toFixed(1)}%</div>
-    </div>
+        {/* Top Row: 2 Cards */}
+        <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
+          <div
+            style={{
+              flex: 1,
+              padding: 16,
+              borderRadius: 12,
+              background: '#f0f0f0',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>Possible Offload</div>
+            <div style={{ fontSize: 24, fontWeight: 700 }}>{((avgCpuUtil + avgGpuUtil) / 2 * 100).toFixed(1)}%</div>
+          </div>
 
-    <div
-      style={{
-        flex: 1,
-        padding: 16,
-        borderRadius: 12,
-        background: '#f0f0f0',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-        textAlign: 'center',
-      }}
-    >
-      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>Total kmh Offloaded</div>
-      <div style={{ fontSize: 24, fontWeight: 700 }}>
-        {(availableMachines * avgMachineLoad * 0.8).toFixed(1)} kmh
-      </div>
-    </div>
-  </div>
+          <div
+            style={{
+              flex: 1,
+              padding: 16,
+              borderRadius: 12,
+              background: '#f0f0f0',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>Total kmh Offloaded</div>
+            <div style={{ fontSize: 24, fontWeight: 700 }}>
+              {(availableMachines * avgMachineLoad * 0.8).toFixed(1)} kmh
+            </div>
+          </div>
+        </div>
 
   {/* Bottom Row: 5 Cards */}
   <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -411,66 +411,162 @@ export default function Page() {
     ))}
   </div>
 
-    {/* ===== COST SAVING & ENVIRONMENTAL IMPACT ROW ===== */}
-<div style={{ display: 'flex', gap: 16, marginTop: 16, flexWrap: 'wrap' }}>
-  {[
-    { 
-      label: 'Cost Saving', 
-      metrics: [
-        { label: 'Fuel Saved', value: '1200 L' },
-        { label: 'Electricity Saved', value: '450 kWh' },
-        { label: 'Maintenance', value: '$320' },
-        { label: 'Operational Cost', value: '$780' },
-      ],
-    },
-    { 
-      label: 'Environmental Impact', 
-      metrics: [
-        { label: 'CO2 Reduced', value: '1.2 t' },
-        { label: 'Water Saved', value: '500 L' },
-        { label: 'Waste Reduced', value: '120 kg' },
-        { label: 'Recycling', value: '80%' },
-      ],
-    },
-  ].map((section) => (
-    <div
-      key={section.label}
-      style={{
-        flex: 1,
-        minWidth: 280,
-        padding: 16,
-        borderRadius: 12,
-        background: '#f0f0f0',
-        boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
-      }}
-    >
-      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, textAlign: 'center' }}>
-        {section.label}
-      </div>
+        {/* ===== COST SAVING & ENVIRONMENTAL IMPACT ROW ===== */}
+        <div style={{ display: 'flex', gap: 16, marginTop: 16, flexWrap: 'wrap' }}>
+          {[
+            {
+              label: 'Cost Saving',
+              metrics: [
+                { label: 'Fuel Saved', value: '1200 L' },
+                { label: 'Electricity Saved', value: '450 kWh' },
+                { label: 'Maintenance', value: '$320' },
+                { label: 'Operational Cost', value: '$780' },
+              ],
+            },
+            {
+              label: 'Environmental Impact',
+              metrics: [
+                { label: 'CO2 Reduced', value: '1.2 t' },
+                { label: 'Water Saved', value: '500 L' },
+                { label: 'Waste Reduced', value: '120 kg' },
+                { label: 'Recycling', value: '80%' },
+              ],
+            },
+          ].map((section) => (
+            <div
+              key={section.label}
+              style={{
+                flex: 1,
+                minWidth: 280,
+                padding: 16,
+                borderRadius: 12,
+                background: '#f0f0f0',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+              }}
+            >
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, textAlign: 'center' }}>
+                {section.label}
+              </div>
 
-      {/* Inner 2x2 grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        {section.metrics.map((metric) => (
-          <div
-            key={metric.label}
-            style={{
-              padding: 12,
-              borderRadius: 10,
-              background: '#ffffff',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
-              textAlign: 'center',
-            }}
-          >
-            <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 6 }}>{metric.label}</div>
-            <div style={{ fontSize: 16, fontWeight: 700 }}>{metric.value}</div>
+              {/* Inner 2x2 grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {section.metrics.map((metric) => (
+                  <div
+                    key={metric.label}
+                    style={{
+                      padding: 12,
+                      borderRadius: 10,
+                      background: '#ffffff',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 6 }}>{metric.label}</div>
+                    <div style={{ fontSize: 16, fontWeight: 700 }}>{metric.value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* ===== 1/3 + 2/3 ROW ===== */}
+        <div style={{ display: 'flex', gap: 16, marginTop: 16, alignItems: 'stretch' }}>
+          {/* ===== LEFT: 1/3 (STACKS DOWN, DOES NOT GROW RIGHT) ===== */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16, minWidth: 280 }}>
+            {/* ===== WEATHER & AIR QUALITY (mapped small cards) ===== */}
+            <div
+              style={{
+                padding: 16,
+                borderRadius: 12,
+                background: '#f0f0f0',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+              }}
+            >
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, textAlign: 'center' }}>
+                Weather + Air Quality
+              </div>
+
+              {/* Inner grid: forces wrapping inside the left column (no horizontal expansion) */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {[
+                  {
+                    label: 'Temperature',
+                    value: temperatureF == null ? '—' : `${temperatureF.toFixed(1)} °F`,
+                  },
+                  {
+                    label: 'Humidity',
+                    value: humidityPct == null ? '—' : `${Math.round(humidityPct)}%`,
+                  },
+                  {
+                    label: 'Air Quality (US AQI)',
+                    value: aqi == null ? '—' : `${Math.round(aqi)}`,
+                  },
+                ].map((metric) => (
+                  <div
+                    key={metric.label}
+                    style={{
+                      padding: 12,
+                      borderRadius: 10,
+                      background: '#ffffff',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 6 }}>{metric.label}</div>
+                    <div style={{ fontSize: 16, fontWeight: 700 }}>{metric.value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* (optional) add more left-column cards here later; they will stack vertically */}
           </div>
-        ))}
-      </div>
-    </div>
-  ))}
-</div>
 
-    </div>
+          {/* ===== RIGHT: 2/3 ===== */}
+          <div style={{ flex: 2, minWidth: 0, display: 'flex' }}>
+            <div
+              style={{
+                flex: 1,
+                padding: 16,
+                borderRadius: 12,
+                background: '#f0f0f0',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, textAlign: 'center' }}>
+                Gemini Weather Analysis
+              </div>
+
+              <div
+                style={{
+                  flex: 1,
+                  padding: 12,
+                  borderRadius: 10,
+                  background: '#ffffff',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                }}
+              >
+                <div style={{ fontSize: 13, lineHeight: 1.6, color: '#333' }}>
+                  <p style={{ marginBottom: 8 }}>
+                    It's quite cold at 33.4 °F, so bundle up if you're heading outdoors. Frost conditions are likely.
+                  </p>
+                  <p style={{ marginBottom: 8 }}>
+                    The humidity is relatively low at 34%, which means the air is quite dry. This could make skin and respiratory conditions feel more pronounced.
+                  </p>
+                  <p>
+                    Air quality is excellent with an AQI of 29, indicating clean air and good conditions for outdoor activities.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
