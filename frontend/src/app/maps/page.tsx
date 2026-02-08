@@ -102,6 +102,7 @@ async function fetchOpenMeteoAQI(lat: number, lng: number, signal?: AbortSignal)
 
 export default function Page() {
   const [radiusMeters, setRadiusMeters] = React.useState(800);
+  const [cpuError, setCpuError] = React.useState<string | null>(null);
   const [circleCenter, setCircleCenter] = React.useState<LatLng>({
     lat: 33.753746,
     lng: -84.38633,
@@ -283,30 +284,59 @@ export default function Page() {
           <div style={{ marginTop: 20, fontWeight: 700, fontSize: 13, color: '#059669' }}>Device Metrics</div>
 
           <div style={{ marginTop: 10, fontSize: 12 }}>
-            CPU Utilization: {avgCpuUtil.toFixed(2)}
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.01}
-              value={avgCpuUtil}
-              onChange={(e) => setAvgCpuUtil(Number(e.target.value))}
-              style={{ width: '100%', accentColor: '#10b981' }}
-            />
-          </div>
+  CPU Utilization: {avgCpuUtil.toFixed(2)}
+  <input
+    type="range"
+    min={0}
+    max={1}
+    step={0.01}
+    value={avgCpuUtil}
+    onChange={(e) => {
+      const newCpu = Number(e.target.value);
+
+      if (newCpu >= avgGpuUtil) {
+        setCpuError('CPU utilization must be less than GPU utilization');
+        setAvgCpuUtil(0);
+      } else {
+        setCpuError(null);
+        setAvgCpuUtil(newCpu);
+      }
+    }}
+    style={{ width: '100%', accentColor: '#10b981' }}
+  />
+
+  {cpuError && (
+    <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>
+      {cpuError}
+    </div>
+  )}
+</div>
+
 
           <div style={{ marginTop: 10, fontSize: 12 }}>
-            GPU Utilization: {avgGpuUtil.toFixed(2)}
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.01}
-              value={avgGpuUtil}
-              onChange={(e) => setAvgGpuUtil(Number(e.target.value))}
-              style={{ width: '100%', accentColor: '#10b981' }}
-            />
-          </div>
+  GPU Utilization: {avgGpuUtil.toFixed(2)}
+  <input
+    type="range"
+    min={0}
+    max={1}
+    step={0.01}
+    value={avgGpuUtil}
+    onChange={(e) => {
+      const newGpu = Number(e.target.value);
+
+      if (newGpu <= avgCpuUtil) {
+        setCpuError('CPU utilization must be less than GPU utilization');
+        setAvgCpuUtil(0);
+      } else {
+        setCpuError(null);
+      }
+
+      setAvgGpuUtil(newGpu);
+    }}
+    style={{ width: '100%', accentColor: '#10b981' }}
+  />
+</div>
+
 
           <div style={{ marginTop: 10, fontSize: 12 }}>
             Available Machines
