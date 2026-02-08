@@ -16,7 +16,7 @@ export function Header() {
             {/* Logo and title */}
             <div className="flex items-center space-x-2">
               <div className="h-7 w-7 rounded-lg bg-primary"></div>
-              <span className="font-semibold text-sm">Title Title</span>
+              <span className="font-semibold text-sm">Supa Idle</span>
             </div>
 
             {/* Navigation links */}
