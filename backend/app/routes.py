@@ -1,21 +1,42 @@
 import os
 from flask import Blueprint, jsonify, request
-from joblib import load as joblib_load
-import pandas as pd
+
+from .imitation import (
+    DISPLAY_LABELS,
+    DISPLAY_ORDER,
+    INPUT_COLS,
+    run_inference,
+    run_inference_from_population,
+)
 
 api = Blueprint("api", __name__)
 
-# Load model once at module load (lazy load on first predict if you prefer)
-_MODEL = None
-_MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "models", "gbr_power_offload.pkl")
+# Physics constants from FedLearningAIModel notebook (must match training data)
+P_IDLE = 250          # watts per machine at idle
+P_PEAK = 900           # watts per machine at full GPU utilization
+P_CPU_PEAK = 400       # watts per machine at full CPU utilization
+SAFE_GPU_UTIL = 0.7    # cooling-safe operating point
+SAFE_CPU_UTIL = 0.7    # cooling-safe operating point
+CLUSTER_SCALE_FACTOR = 100
 
 
-def _get_model():
-    global _MODEL
-    if _MODEL is None:
-        # Use joblib (sklearn's serializer) to avoid pickle protocol issues with Python 3.13+
-        _MODEL = joblib_load(_MODEL_PATH)
-    return _MODEL
+def _power_to_offload_w(avg_cpu_util: float, active_machines: float, avg_gpu_util: float) -> float:
+    """Power to offload (watts) using the same physics formula as the notebook."""
+    cluster_it_power_w = (
+        active_machines * CLUSTER_SCALE_FACTOR * (
+            P_IDLE
+            + avg_gpu_util * (P_PEAK - P_IDLE)
+            + avg_cpu_util * P_CPU_PEAK
+        )
+    )
+    safe_cluster_power_w = (
+        active_machines * CLUSTER_SCALE_FACTOR * (
+            P_IDLE
+            + SAFE_GPU_UTIL * (P_PEAK - P_IDLE)
+            + SAFE_CPU_UTIL * P_CPU_PEAK
+        )
+    )
+    return max(0.0, cluster_it_power_w - safe_cluster_power_w)
 
 
 @api.get("/health")
@@ -26,41 +47,96 @@ def health():
 @api.post("/wattage")
 def predict_wattage():
     """
-    Expects JSON with features the model was trained on (e.g. avg_cpu_util, active_machines, avg_gpu_util).
-    Optional: machine_load_1_mean. Uses model.feature_names_in_ so columns always match fit.
-    Returns { "Wattage": number }.
+    Expects JSON: avg_cpu_util, active_machines, avg_gpu_util (each 0–1 for util).
+    Returns { "Wattage": number } (watts to offload) using the physics formula.
     """
     data = request.get_json(silent=True) or {}
-    model = _get_model()
-    # Use the model's actual feature names from training (order matters)
-    _names = getattr(model, "feature_names_in_", None)
-    if _names is None or len(_names) == 0:
-        feature_names = ("avg_cpu_util", "active_machines", "avg_gpu_util")
-    else:
-        feature_names = list(_names)
-    missing = [k for k in feature_names if k not in data]
+    required = ("avg_cpu_util", "active_machines", "avg_gpu_util")
+    missing = [k for k in required if k not in data]
     if missing:
         return jsonify({"error": f"Missing keys: {list(missing)}"}), 400
 
     try:
-        row = [float(data[name]) for name in feature_names]
+        avg_cpu_util = float(data["avg_cpu_util"])
+        active_machines = float(data["active_machines"])
+        avg_gpu_util = float(data["avg_gpu_util"])
     except (TypeError, ValueError) as e:
         return jsonify({"error": f"Invalid numeric values: {e}"}), 400
 
-    # Idle cluster (0% CPU and 0% GPU): no power to offload. Model wasn't trained there and extrapolates wrong.
-    cpu_util = data.get("avg_cpu_util")
-    gpu_util = data.get("avg_gpu_util")
-    if cpu_util is not None and gpu_util is not None:
-        try:
-            c, g = float(cpu_util), float(gpu_util)
-            if c <= 0 and g <= 0:
-                return jsonify({"Wattage": 0.0})
-        except (TypeError, ValueError):
-            pass
+    wattage = _power_to_offload_w(avg_cpu_util, active_machines, avg_gpu_util)
+    return jsonify({"Wattage": round(wattage, 2)})
 
-    X = pd.DataFrame([row], columns=feature_names)
-    # Model outputs kW; convert to watts for Wattage
-    power_kw = float(model.predict(X)[0])
-    wattage = round(max(0.0, power_kw * 1000), 2)
 
-    return jsonify({"Wattage": wattage})
+@api.post("/allocate")
+def predict_allocate():
+    """
+    Imitation model: allocate P_offload_kw across device classes.
+    Expects JSON with all 16 inputs (P_offload_kw, then for each of phone, laptop, desktop, traffic_light, appliance:
+    {name}_count, {name}_avg_w, {name}_avail).
+    Returns scores, capacities_kw, alloc_kw per device, alloc_total_kw, unmet_kw.
+    """
+    data = request.get_json(silent=True) or {}
+    missing = [k for k in INPUT_COLS if k not in data]
+    if missing:
+        return jsonify({"error": f"Missing keys: {missing}"}), 400
+
+    try:
+        row = {k: float(data[k]) for k in INPUT_COLS}
+    except (TypeError, ValueError) as e:
+        return jsonify({"error": f"Invalid numeric values: {e}"}), 400
+
+    result = run_inference(row)
+    return jsonify(result)
+
+
+@api.post("/allocate_from_population")
+def allocate_from_population():
+    """
+    Frontend sends: population (P), traffic_light_count, and P_offload_kw (kW to allocate)
+    or wattage (watts; converted to kW automatically).
+    Device counts: phone=P/100, appliance=P/400, laptop=P*0.68/100, desktop=P*0.37/100,
+    traffic_light=given. avg_w and avail are sampled from training-script distributions.
+    Returns scores, allocation, and formatted summary_lines + total_line for display.
+    """
+    data = request.get_json(silent=True) or {}
+    required = ("population", "traffic_light_count")
+    missing = [k for k in required if k not in data]
+    if missing:
+        return jsonify({"error": f"Missing keys: {list(missing)}"}), 400
+
+    try:
+        population = float(data["population"])
+        traffic_light_count = float(data["traffic_light_count"])
+    except (TypeError, ValueError) as e:
+        return jsonify({"error": f"Invalid numeric values: {e}"}), 400
+
+    if "P_offload_kw" in data:
+        P_offload_kw = float(data["P_offload_kw"])
+    elif "wattage" in data:
+        P_offload_kw = float(data["wattage"]) / 1000.0
+    else:
+        return jsonify({"error": "Provide either P_offload_kw (kW) or wattage (W)"}), 400
+
+    if P_offload_kw < 0:
+        return jsonify({"error": "P_offload_kw / wattage must be non-negative"}), 400
+
+    result = run_inference_from_population(population, traffic_light_count, P_offload_kw)
+    alloc = result["alloc_kw"]
+    capacities = result["capacities_kw"]
+    counts = {
+        DISPLAY_LABELS[name]: result["input_counts"][name]
+        for name in DISPLAY_ORDER
+    }
+    offload_per_device = {
+        DISPLAY_LABELS[name]: round(alloc[name], 2)
+        for name in DISPLAY_ORDER
+    }
+    max_offload_capacity_kw = round(sum(capacities.values()), 2)
+    return jsonify({
+        "counts": counts,
+        "raw_kw_offload": result["raw_total_kw_offloaded"],
+        "percent_offload": result["percent_offload"],
+        "offload_per_device": offload_per_device,
+        "max_offload_capacity_kw": max_offload_capacity_kw,
+        "offload_needed_kw": round(P_offload_kw, 2),
+    })
