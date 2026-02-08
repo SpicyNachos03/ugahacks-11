@@ -553,10 +553,11 @@ resetImpactToLoading();
   ]);
 
   return (
-    <div className="min-h-screen pt-20" style={{ background: '#f0fdf4', color: '#064e3b' }}>
-      <Header />
+    <>
+      <div className="min-h-screen pt-20" style={{ background: '#f0fdf4', color: '#064e3b' }}>
+        <Header />
 
-      <div style={{ display: 'flex', gap: 32, padding: '16px 32px', height: '600px' }}>
+        <div style={{ display: 'flex', gap: 32, padding: '16px 32px', height: '600px' }}>
         {/* INPUT DIV */}
         <aside
           style={{
@@ -954,6 +955,7 @@ resetImpactToLoading();
         )}
       </div>
     </div>
-      <Footer />
+        <Footer />
+      </>
   );
 }
