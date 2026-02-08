@@ -47,11 +47,7 @@ async function fetchOpenMeteoWeather(
   return { temperatureF: t, humidityPct: h };
 }
 
-async function fetchOpenMeteoAQI(
-  lat: number,
-  lng: number,
-  signal?: AbortSignal
-): Promise<{ aqi: number | null }> {
+async function fetchOpenMeteoAQI(lat: number, lng: number, signal?: AbortSignal): Promise<{ aqi: number | null }> {
   const url = new URL('https://air-quality-api.open-meteo.com/v1/air-quality');
   url.searchParams.set('latitude', String(lat));
   url.searchParams.set('longitude', String(lng));
@@ -81,11 +77,16 @@ export default function Page() {
     lng: -84.38633,
   });
 
-  // ===== NEW DEVICE INPUT STATE =====
+  // ===== DEVICE INPUT STATE =====
   const [avgCpuUtil, setAvgCpuUtil] = React.useState(0.5);
   const [avgGpuUtil, setAvgGpuUtil] = React.useState(0.5);
   const [availableMachines, setAvailableMachines] = React.useState(100);
   const [avgMachineLoad, setAvgMachineLoad] = React.useState(0.7);
+
+  // ===== WATTAGE STATE (NEW) =====
+  const [wattageLoading, setWattageLoading] = React.useState(false);
+  const [wattage, setWattage] = React.useState<number | null>(null);
+  const [wattageError, setWattageError] = React.useState<string | null>(null);
 
   // Traffic signals state
   const [loading, setLoading] = React.useState(false);
@@ -148,6 +149,56 @@ export default function Page() {
     return () => ctrl.abort();
   }, [debouncedCenter.lat, debouncedCenter.lng]);
 
+  // ===== WATTAGE POST (NEW) =====
+  const debouncedAvgCpuUtil = useDebouncedValue(avgCpuUtil, 500);
+  const debouncedAvgGpuUtil = useDebouncedValue(avgGpuUtil, 500);
+  const debouncedAvailableMachines = useDebouncedValue(availableMachines, 500);
+  const debouncedAvgMachineLoad = useDebouncedValue(avgMachineLoad, 500);
+
+  React.useEffect(() => {
+    const ctrl = new AbortController();
+
+    setWattageLoading(true);
+    setWattageError(null);
+
+    fetch('http://localhost:5001/api/wattage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        avg_cpu_util: debouncedAvgCpuUtil,
+        avg_gpu_util: debouncedAvgGpuUtil,
+        active_machines: debouncedAvailableMachines,
+        machine_load_1_mean: debouncedAvgMachineLoad,
+      }),
+      signal: ctrl.signal,
+    })
+      .then(async (res) => {
+        const ct = res.headers.get('content-type') || '';
+        if (!res.ok) {
+          const msg = ct.includes('application/json')
+            ? (await res.json().catch(() => null))?.error ?? `HTTP ${res.status}`
+            : await res.text();
+          throw new Error(msg);
+        }
+        return res.json();
+      })
+      .then((data: any) => {
+        if (typeof data?.Wattage !== 'number' || Number.isNaN(data.Wattage)) {
+          throw new Error('Unexpected response format (expected { Wattage: number })');
+        }
+        setWattage(data.Wattage);
+        setWattageLoading(false);
+      })
+      .catch((e) => {
+        if (e?.name === 'AbortError') return;
+        setWattage(null);
+        setWattageError(String(e?.message ?? e));
+        setWattageLoading(false);
+      });
+
+    return () => ctrl.abort();
+  }, [debouncedAvgCpuUtil, debouncedAvgGpuUtil, debouncedAvailableMachines, debouncedAvgMachineLoad]);
+
   return (
     <div className="min-h-screen pt-20 bg-black flex flex-col">
       <Header />
@@ -171,7 +222,7 @@ export default function Page() {
             style={{ width: '100%' }}
             type="range"
             min={100}
-            max={5000}
+            max={10000}
             step={50}
             value={radiusMeters}
             onChange={(e) => setRadiusMeters(Number(e.target.value))}
@@ -227,19 +278,20 @@ export default function Page() {
             />
           </div>
 
+          {/* ===== WATTAGE DISPLAY (NEW) ===== */}
+          <div style={{ marginTop: 12, fontSize: 12 }}>
+            <div style={{ fontWeight: 700 }}>Predicted Wattage</div>
+            {wattageLoading ? 'Predicting…' : wattage == null ? '—' : `${wattage.toFixed(2)} W`}
+            {wattageError && <div style={{ color: '#ffb4b4' }}>Error: {wattageError}</div>}
+          </div>
+
           {/* Weather + AQI */}
           <div style={{ marginTop: 16, fontSize: 12 }}>
             <div style={{ fontWeight: 700 }}>Weather + Air Quality</div>
-            <div>
-              Temperature (°F): {temperatureF == null ? '—' : `${temperatureF.toFixed(1)} °F`}
-            </div>
-            <div>
-              Humidity (%): {humidityPct == null ? '—' : `${Math.round(humidityPct)}%`}
-            </div>
+            <div>Temperature (°F): {temperatureF == null ? '—' : `${temperatureF.toFixed(1)} °F`}</div>
+            <div>Humidity (%): {humidityPct == null ? '—' : `${Math.round(humidityPct)}%`}</div>
             <div>Air Quality Index (US AQI): {aqi == null ? '—' : Math.round(aqi)}</div>
-            <div style={{ fontSize: 11, opacity: 0.7 }}>
-              {meteoLoading ? 'Updating…' : 'Updated'}
-            </div>
+            <div style={{ fontSize: 11, opacity: 0.7 }}>{meteoLoading ? 'Updating…' : 'Updated'}</div>
             {meteoError && <div style={{ color: '#ffb4b4' }}>Error: {meteoError}</div>}
           </div>
 
@@ -284,7 +336,8 @@ export default function Page() {
         <h2 style={{ fontSize: 16, fontWeight: 700 }}>Output</h2>
         <div style={{ marginTop: 8, fontSize: 14 }}>
           Found {count} traffic signals and {population?.toLocaleString() ?? '—'} people within {radiusMeters} meters.
-          <br /><br />
+          <br />
+          <br />
           <b>Device Inputs:</b>
           <br />
           avg_cpu_util: {avgCpuUtil.toFixed(2)}
@@ -294,7 +347,19 @@ export default function Page() {
           available_machines: {availableMachines}
           <br />
           average_machine_load: {avgMachineLoad.toFixed(2)}
-          <br /><br />
+          <br />
+          <br />
+          <b>Predicted Wattage:</b>
+          <br />
+          {wattageLoading ? 'Predicting…' : wattage == null ? '—' : `${wattage.toFixed(2)} W`}
+          {wattageError && (
+            <>
+              <br />
+              <span style={{ color: '#ffb4b4' }}>Error: {wattageError}</span>
+            </>
+          )}
+          <br />
+          <br />
           <b>Weather + AQI:</b>
           <br />
           Temperature: {temperatureF == null ? '—' : `${temperatureF.toFixed(1)} °F`}
