@@ -10,8 +10,14 @@ export default function Page() {
   const [radiusMeters, setRadiusMeters] = React.useState(800);
   const [circleCenter, setCircleCenter] = React.useState<LatLng>({
     lat: 33.753746,
-    lng: 	-84.386330,
+    lng: -84.38633,
   });
+
+  // ===== NEW INPUT STATE =====
+  const [avgCpuUtil, setAvgCpuUtil] = React.useState(0.5);
+  const [avgGpuUtil, setAvgGpuUtil] = React.useState(0.5);
+  const [availableMachines, setAvailableMachines] = React.useState(100);
+  const [avgMachineLoad, setAvgMachineLoad] = React.useState(0.7);
 
   // Traffic signals state
   const [loading, setLoading] = React.useState(false);
@@ -23,7 +29,6 @@ export default function Page() {
   const [population, setPopulation] = React.useState<number | null>(null);
   const [popError, setPopError] = React.useState<string | null>(null);
 
-  // IMPORTANT: memoize callbacks to avoid infinite effect restarts in Maps.tsx
   const handleStatusChange = React.useCallback(
     ({ loading, count, error }: { loading: boolean; count: number; error: string | null }) => {
       setLoading(loading);
@@ -43,93 +48,137 @@ export default function Page() {
   );
 
   return (
-    <div className= "min-h-screen pt-20 bg-black">
+    <div className="min-h-screen pt-20 bg-black flex flex-col">
       <Header />
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        gap: 16,
-        padding: 16,
-        background: '#0b0b0f',
-      }}
-    >
-      <aside
-        style={{
-          width: 300,
-          borderRadius: 16,
-          padding: 16,
-          color: 'white',
-          background: 'rgba(255,255,255,0.06)',
-          border: '1px solid rgba(255,255,255,0.10)',
-        }}
-      >
-        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>Area stats</div>
 
-        <div style={{ fontSize: 12, opacity: 0.85, marginBottom: 8 }}>Radius: {radiusMeters} m</div>
-        <input
-          style={{ width: '100%' }}
-          type="range"
-          min={100}
-          max={5000}
-          step={50}
-          value={radiusMeters}
-          onChange={(e) => setRadiusMeters(Number(e.target.value))}
-        />
+      <div style={{ minHeight: '100vh', display: 'flex', gap: 16, padding: 16, background: '#0b0b0f' }}>
+        <aside
+          style={{
+            width: 300,
+            borderRadius: 16,
+            padding: 16,
+            color: 'white',
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.10)',
+          }}
+        >
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>Area stats</div>
 
-        {/* Traffic signals */}
-        <div style={{ marginTop: 14, fontSize: 12, opacity: 0.9 }}>
-          <div style={{ fontWeight: 700, marginBottom: 6 }}>Traffic signals (OSM)</div>
-          {loading ? 'Searching…' : `Found: ${count}`}
-          {error && (
-            <div style={{ marginTop: 6, fontSize: 12, color: '#ffb4b4' }}>
-              Error: {error}
-            </div>
-          )}
-        </div>
+          {/* Radius */}
+          <div style={{ fontSize: 12, opacity: 0.85 }}>Radius: {radiusMeters} m</div>
+          <input
+            style={{ width: '100%' }}
+            type="range"
+            min={100}
+            max={5000}
+            step={50}
+            value={radiusMeters}
+            onChange={(e) => setRadiusMeters(Number(e.target.value))}
+          />
 
-        {/* Population */}
-        <div style={{ marginTop: 14, fontSize: 12, opacity: 0.9 }}>
-          <div style={{ fontWeight: 700, marginBottom: 6 }}>Population (WorldPop)</div>
-          {popLoading ? 'Estimating…' : population == null ? '—' : population.toLocaleString()}
-          {popError && (
-            <div style={{ marginTop: 6, fontSize: 12, color: '#ffb4b4' }}>
-              Error: {popError}
-            </div>
-          )}
-          <div style={{ marginTop: 6, fontSize: 11, opacity: 0.65 }}>
-            Note: model-based estimate (WorldPop), not a census count.
+          {/* ===== NEW INPUTS ===== */}
+          <div style={{ marginTop: 20, fontWeight: 700, fontSize: 13 }}>Device Metrics</div>
+
+          <div style={{ marginTop: 10, fontSize: 12 }}>
+            CPU Utilization: {avgCpuUtil.toFixed(2)}
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={avgCpuUtil}
+              onChange={(e) => setAvgCpuUtil(Number(e.target.value))}
+              style={{ width: '100%' }}
+            />
           </div>
+
+          <div style={{ marginTop: 10, fontSize: 12 }}>
+            GPU Utilization: {avgGpuUtil.toFixed(2)}
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={avgGpuUtil}
+              onChange={(e) => setAvgGpuUtil(Number(e.target.value))}
+              style={{ width: '100%' }}
+            />
+          </div>
+
+          <div style={{ marginTop: 10, fontSize: 12 }}>
+            Available Machines
+            <input
+              type="number"
+              value={availableMachines}
+              onChange={(e) => setAvailableMachines(Number(e.target.value))}
+              style={{ width: '100%', marginTop: 4 }}
+            />
+          </div>
+
+          <div style={{ marginTop: 10, fontSize: 12 }}>
+            Avg Machine Load
+            <input
+              type="number"
+              step="0.01"
+              value={avgMachineLoad}
+              onChange={(e) => setAvgMachineLoad(Number(e.target.value))}
+              style={{ width: '100%', marginTop: 4 }}
+            />
+          </div>
+
+          {/* Traffic signals */}
+          <div style={{ marginTop: 16, fontSize: 12 }}>
+            <div style={{ fontWeight: 700 }}>Traffic signals (OSM)</div>
+            {loading ? 'Searching…' : `Found: ${count}`}
+            {error && <div style={{ color: '#ffb4b4' }}>Error: {error}</div>}
+          </div>
+
+          {/* Population */}
+          <div style={{ marginTop: 12, fontSize: 12 }}>
+            <div style={{ fontWeight: 700 }}>Population (WorldPop)</div>
+            {popLoading ? 'Estimating…' : population?.toLocaleString() ?? '—'}
+            {popError && <div style={{ color: '#ffb4b4' }}>Error: {popError}</div>}
+          </div>
+        </aside>
+
+        <div style={{ flex: 1, borderRadius: 16, overflow: 'hidden' }}>
+          <Maps
+            radiusMeters={radiusMeters}
+            setRadiusMeters={setRadiusMeters}
+            circleCenter={circleCenter}
+            setCircleCenter={setCircleCenter}
+            onStatusChange={handleStatusChange}
+            onPopulationChange={handlePopulationChange}
+          />
         </div>
+      </div>
 
-        <div style={{ marginTop: 12, fontSize: 11, opacity: 0.65 }}>
-          Center:
-          <br />
-          {circleCenter.lat.toFixed(6)}, {circleCenter.lng.toFixed(6)}
-        </div>
-
-        <div style={{ marginTop: 14, fontSize: 11, opacity: 0.6 }}>Tip: click map to move circle</div>
-      </aside>
-
+      {/* ===== OUTPUT SECTION ===== */}
       <div
         style={{
-          flex: 1,
+          margin: 24,
+          padding: 16,
           borderRadius: 16,
-          overflow: 'hidden',
+          background: 'rgba(255, 255, 255, 0.06)',
+          color: 'white',
           border: '1px solid rgba(255,255,255,0.10)',
-          background: 'rgba(255,255,255,0.03)',
         }}
       >
-        <Maps
-          radiusMeters={radiusMeters}
-          setRadiusMeters={setRadiusMeters}
-          circleCenter={circleCenter}
-          setCircleCenter={setCircleCenter}
-          onStatusChange={handleStatusChange}
-          onPopulationChange={handlePopulationChange}
-        />
+        <h2 style={{ fontSize: 16, fontWeight: 700 }}>Output</h2>
+        <div style={{ marginTop: 8, fontSize: 14 }}>
+          Found {count} traffic signals and {population?.toLocaleString() ?? '—'} people within {radiusMeters} meters.
+          <br /><br />
+          <b>Device Inputs:</b>
+          <br />
+          avg_cpu_util: {avgCpuUtil.toFixed(2)}
+          <br />
+          avg_gpu_util: {avgGpuUtil.toFixed(2)}
+          <br />
+          available_machines: {availableMachines}
+          <br />
+          average_machine_load: {avgMachineLoad.toFixed(2)}
+        </div>
       </div>
-    </div>
     </div>
   );
 }
