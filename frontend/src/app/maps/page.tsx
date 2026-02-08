@@ -526,11 +526,11 @@ export default function Page() {
              <div style={{ position: 'absolute', top: -12, left: 24, background: '#10b981', color: 'white', padding: '2px 12px', borderRadius: '12px', fontSize: 12, fontWeight: 700 }}>
                 AI INSIGHT
              </div>
-             <div style={{ fontSize: 15, lineHeight: 1.7, color: '#064e3b' }}>
-                <p style={{ marginBottom: 12 }}><b>Atmospheric Analysis:</b> It's quite cold at 33.4 °F. Cooling systems are currently running at peak efficiency due to the low ambient temperature.</p>
-                <p style={{ marginBottom: 12 }}><b>Dry Air Warning:</b> Humidity is low (34%). Ensure static protection is active for high-density hardware offloading.</p>
-                <p><b>Green Signal:</b> Excellent AQI (29) allows for maximum hardware lifespan and reduced filter maintenance during this cycle.</p>
-             </div>
+                <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.5, color: '#333' }}>
+                  {geminiLoading && <p style={{ margin: 0 }}>Loading analysis...</p>}
+                  {geminiAnalysis && <p style={{ margin: 0 }}>{geminiAnalysis}</p>}
+                  {!geminiLoading && !geminiAnalysis && <p style={{ margin: 0 }}>Analysis will appear here.</p>}
+                </div>
           </div>
         </div>
       </div>
