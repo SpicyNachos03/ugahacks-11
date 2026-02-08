@@ -62,13 +62,19 @@ const features = [
 
 export function FeaturesSection() {
   return (
-    <section id="features" className="py-20 bg-white">
+    <section id="features" className="pb-10 lg:py-20 bg-gradient-to-b from-white via-emerald-50/30 to-white">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl tracking-tight mb-4 text-gray-900">
-            Features to maintain and optimize your data center
+          <Badge variant="secondary" className="mb-4 bg-emerald-100 text-emerald-700 border-emerald-200">
+            Features
+          </Badge>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl tracking-tight mb-4 text-emerald-950">
+            Features to maintain and optimize your{" "}
+            <span className="bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+              data center
+            </span>
           </h2>
-          <p className="max-w-2xl mx-auto text-lg text-gray-700">
+          <p className="max-w-2xl mx-auto text-lg text-muted-foreground">
             From building predictive models to comprehensive dashboards, our platform provides all the insights you need to maintain scalable cooling systems.
           </p>
         </div>
@@ -77,18 +83,18 @@ export function FeaturesSection() {
           {features.map((feature, index) => {
             const Icon = feature.icon;
             return (
-              <Card key={index} className="relative border bg-white shadow-sm">
+              <Card key={index} className="relative border-emerald-50 bg-white shadow-sm hover:border-emerald-200 transition-colors">
                 <CardHeader>
                   <div className="flex items-center justify-between mb-2">
-                    <Icon className="h-8 w-8 text-primary" />
-                    <Badge variant="default" className="text-xs">
+                    <Icon className="h-8 w-8 text-emerald-600" />
+                    <Badge variant="secondary" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-100">
                       {feature.badge}
                     </Badge>
                   </div>
-                  <CardTitle className="text-lg text-gray-900">{feature.title}</CardTitle>
+                  <CardTitle className="text-lg text-emerald-900">{feature.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription className="text-gray-700">{feature.description}</CardDescription>
+                  <CardDescription className="text-muted-foreground">{feature.description}</CardDescription>
                 </CardContent>
               </Card>
             );
