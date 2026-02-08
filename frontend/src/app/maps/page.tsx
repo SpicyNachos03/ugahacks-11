@@ -494,81 +494,142 @@ export default function Page() {
       </div>
 
       {/* OUTPUT SECTION */}
+      {/* OUTPUT SECTION */}
+<div
+  style={{
+    margin: '32px 70px 50px 70px',
+    padding: 24,
+    borderRadius: 24,
+    background: '#ffffff',
+    color: '#064e3b',
+    border: '1px solid #d1fae5',
+    boxShadow: '0 10px 25px rgba(6, 78, 59, 0.05)',
+  }}
+>
+  <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 24, color: '#059669' }}>
+    Sustainability Impact Output
+  </h2>
+
+  {/* Top Row */}
+  <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
+    <div
+      style={{
+        flex: 1,
+        padding: 20,
+        borderRadius: 16,
+        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+        color: 'white',
+        textAlign: 'center',
+      }}
+    >
+      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, opacity: 0.9 }}>
+        Possible Offload
+      </div>
+      <div style={{ fontSize: 32, fontWeight: 700 }}>
+  {percentOffload == null
+    ? 'Loading...'
+    : `${(percentOffload * 100).toFixed(1)}%`}
+</div>
+
+    </div>
+
+    <div
+      style={{
+        flex: 1,
+        padding: 20,
+        borderRadius: 16,
+        background: '#ecfdf5',
+        border: '1px solid #10b981',
+        textAlign: 'center',
+      }}
+    >
+      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, color: '#059669' }}>
+        Total kW Offloaded
+      </div>
+      <div style={{ fontSize: 32, fontWeight: 700, color: '#064e3b' }}>
+  {rawKwOffload == null
+    ? 'Loading...'
+    : `${rawKwOffload.toFixed(2)} kW`}
+</div>
+
+    </div>
+  </div>
+
+  {/* Device Counts */}
+  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
+    {Object.entries(deviceCounts || {}).map(([device, count]) => (
       <div
+        key={device}
         style={{
-          margin: '32px 70px 50px 70px',
-          padding: 24,
-          borderRadius: 24,
+          flex: 1,
+          minWidth: 140,
+          padding: 16,
+          borderRadius: 16,
           background: '#ffffff',
-          color: '#064e3b',
-          border: '1px solid #d1fae5',
-          boxShadow: '0 10px 25px rgba(6, 78, 59, 0.05)',
+          border: '1px solid #f0fdf4',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+          textAlign: 'center',
         }}
       >
-        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 24, color: '#059669' }}>Sustainability Impact Output</h2>
-
-        {/* Top Row */}
-        <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
-          <div
-            style={{
-              flex: 1,
-              padding: 20,
-              borderRadius: 16,
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              color: 'white',
-              textAlign: 'center',
-            }}
-          >
-            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, opacity: 0.9 }}>Possible Offload</div>
-            <div style={{ fontSize: 32, fontWeight: 700 }}>{((avgCpuUtil + avgGpuUtil) / 2 * 100).toFixed(1)}%</div>
-          </div>
-
-          <div
-            style={{
-              flex: 1,
-              padding: 20,
-              borderRadius: 16,
-              background: '#ecfdf5',
-              border: '1px solid #10b981',
-              textAlign: 'center',
-            }}
-          >
-            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, color: '#059669' }}>Total kWh Offloaded</div>
-            <div style={{ fontSize: 32, fontWeight: 700, color: '#064e3b' }}>
-              {(availableMachines * 0.8).toFixed(1)} kWh
-            </div>
-          </div>
+        <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 6, color: '#6b7280' }}>
+          {device}
         </div>
-
-        {/* Device Grid */}
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
-          {[
-            { label: 'Traffic Lights', value: count * 5 },
-            { label: 'Phones', value: 1200 },
-            { label: 'Laptops', value: 450 },
-            { label: 'Desktops', value: 320 },
-            { label: 'House Appliances', value: 780 },
-          ].map((item) => (
-            <div
-              key={item.label}
-              style={{
-                flex: 1,
-                minWidth: 140,
-                padding: 16,
-                borderRadius: 16,
-                background: '#ffffff',
-                border: '1px solid #f0fdf4',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-                textAlign: 'center',
-              }}
-            >
-              <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 6, color: '#6b7280' }}>{item.label}</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: '#059669' }}>{item.value}</div>
-            </div>
-          ))}
+        <div style={{ fontSize: 20, fontWeight: 700, color: '#059669' }}>
+          {count}
         </div>
+      </div>
+    ))}
+  </div>
 
-        {/* Impact Rows */}
+  {/* Offload Per Device */}
+  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
+    {Object.entries(offloadPerDevice || {}).map(([device, kw]) => (
+      <div
+        key={device}
+        style={{
+          flex: 1,
+          minWidth: 160,
+          padding: 16,
+          borderRadius: 16,
+          background: '#f8fafc',
+          border: '1px solid #e2e8f0',
+          textAlign: 'center',
+        }}
+      >
+        <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 6, color: '#64748b' }}>
+          {device} Offload
+        </div>
+        <div style={{ fontSize: 20, fontWeight: 700, color: '#0f172a' }}>
+          {kw.toFixed(2)} kW
+        </div>
+      </div>
+    ))}
+  </div>
+
+  {/* Capacity + Needed */}
+  <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
+    <div style={{ flex: 1, padding: 20, borderRadius: 16, background: '#f0fdf4', textAlign: 'center' }}>
+      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>Percent Offload Coverage</div>
+      <div style={{ fontSize: 24, fontWeight: 700 }}>
+  {percentOffload == null
+    ? 'Loading...'
+    : `${percentOffload.toFixed(2)} kW`}
+</div>
+
+  </div>
+
+    <div style={{ flex: 1, padding: 20, borderRadius: 16, background: '#ecfdf5', textAlign: 'center' }}>
+      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>Offload Needed</div>
+      <div style={{ fontSize: 24, fontWeight: 700 }}>
+  {offloadNeededKw == null
+    ? 'Loading...'
+    : `${offloadNeededKw.toFixed(2)} kW`}
+</div>
+
+    </div>
+  </div>
+
+  {/* Impact Rows */}
         <div style={{ display: 'flex', gap: 16, marginTop: 16, flexWrap: 'wrap' }}>
           {[
             {
@@ -654,8 +715,16 @@ export default function Page() {
               {!geminiLoading && !geminiAnalysis && <p style={{ margin: 0 }}>Analysis will appear here.</p>}
             </div>
           </div>
-        </div>
-      </div>
+
+  {/* Status */}
+  {(allocLoading || allocError) && (
+    <div style={{ marginTop: 12, fontSize: 14 }}>
+      {allocLoading && <div>Calculating allocation...</div>}
+      {allocError && <div style={{ color: 'red' }}>{allocError}</div>}
     </div>
+  )}
+</div>
+</div>
+</div>
   );
-}
+} 
