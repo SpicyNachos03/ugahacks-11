@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Maps from '../../../components/Maps';
+import { Header } from '../../../components/Header';
 
 type LatLng = { lat: number; lng: number };
 
@@ -42,6 +43,8 @@ export default function Page() {
   );
 
   return (
+    <div className= "min-h-screen pt-20 bg-black">
+      <Header />
     <div
       style={{
         minHeight: '100vh',
@@ -126,6 +129,7 @@ export default function Page() {
           onPopulationChange={handlePopulationChange}
         />
       </div>
+    </div>
     </div>
   );
 }
