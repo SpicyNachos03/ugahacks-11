@@ -184,7 +184,7 @@ export default function Page() {
       setGeminiLoading(true);
       geminiWeatherAnalysis(temperatureF, humidityPct, aqi)
         .then((result) => {
-          setGeminiAnalysis(result);
+          setGeminiAnalysis(result ?? null);
           setGeminiLoading(false);
         })
         .catch((error) => {
