@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import Maps from '../../../components/Maps';
-import { Header } from "../../../components/Header";
 
 type LatLng = { lat: number; lng: number };
 
@@ -10,16 +9,39 @@ export default function Page() {
   const [radiusMeters, setRadiusMeters] = React.useState(800);
   const [circleCenter, setCircleCenter] = React.useState<LatLng>({
     lat: 33.753746,
-    lng: -84.386330,
+    lng: 	-84.386330,
   });
 
+  // Traffic signals state
   const [loading, setLoading] = React.useState(false);
   const [count, setCount] = React.useState(0);
   const [error, setError] = React.useState<string | null>(null);
 
+  // Population state
+  const [popLoading, setPopLoading] = React.useState(false);
+  const [population, setPopulation] = React.useState<number | null>(null);
+  const [popError, setPopError] = React.useState<string | null>(null);
+
+  // IMPORTANT: memoize callbacks to avoid infinite effect restarts in Maps.tsx
+  const handleStatusChange = React.useCallback(
+    ({ loading, count, error }: { loading: boolean; count: number; error: string | null }) => {
+      setLoading(loading);
+      setCount(count);
+      setError(error);
+    },
+    []
+  );
+
+  const handlePopulationChange = React.useCallback(
+    ({ loading, population, error }: { loading: boolean; population: number | null; error: string | null }) => {
+      setPopLoading(loading);
+      setPopulation(population);
+      setPopError(error);
+    },
+    []
+  );
+
   return (
-    <div className="min-h-screen pt-24 bg-black"> 
-      <Header />
     <div
       style={{
         minHeight: '100vh',
@@ -39,13 +61,9 @@ export default function Page() {
           border: '1px solid rgba(255,255,255,0.10)',
         }}
       >
-        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>
-          Traffic signals
-        </div>
+        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>Area stats</div>
 
-        <div style={{ fontSize: 12, opacity: 0.85, marginBottom: 8 }}>
-          Radius: {radiusMeters} m
-        </div>
+        <div style={{ fontSize: 12, opacity: 0.85, marginBottom: 8 }}>Radius: {radiusMeters} m</div>
         <input
           style={{ width: '100%' }}
           type="range"
@@ -56,15 +74,30 @@ export default function Page() {
           onChange={(e) => setRadiusMeters(Number(e.target.value))}
         />
 
-        <div style={{ marginTop: 12, fontSize: 12, opacity: 0.9 }}>
+        {/* Traffic signals */}
+        <div style={{ marginTop: 14, fontSize: 12, opacity: 0.9 }}>
+          <div style={{ fontWeight: 700, marginBottom: 6 }}>Traffic signals (OSM)</div>
           {loading ? 'Searching…' : `Found: ${count}`}
+          {error && (
+            <div style={{ marginTop: 6, fontSize: 12, color: '#ffb4b4' }}>
+              Error: {error}
+            </div>
+          )}
         </div>
 
-        {error && (
-          <div style={{ marginTop: 8, fontSize: 12, color: '#ffb4b4' }}>
-            Error: {error}
+        {/* Population */}
+        <div style={{ marginTop: 14, fontSize: 12, opacity: 0.9 }}>
+          <div style={{ fontWeight: 700, marginBottom: 6 }}>Population (WorldPop)</div>
+          {popLoading ? 'Estimating…' : population == null ? '—' : population.toLocaleString()}
+          {popError && (
+            <div style={{ marginTop: 6, fontSize: 12, color: '#ffb4b4' }}>
+              Error: {popError}
+            </div>
+          )}
+          <div style={{ marginTop: 6, fontSize: 11, opacity: 0.65 }}>
+            Note: model-based estimate (WorldPop), not a census count.
           </div>
-        )}
+        </div>
 
         <div style={{ marginTop: 12, fontSize: 11, opacity: 0.65 }}>
           Center:
@@ -72,9 +105,7 @@ export default function Page() {
           {circleCenter.lat.toFixed(6)}, {circleCenter.lng.toFixed(6)}
         </div>
 
-        <div style={{ marginTop: 14, fontSize: 11, opacity: 0.6 }}>
-          Tip: click map to move circle
-        </div>
+        <div style={{ marginTop: 14, fontSize: 11, opacity: 0.6 }}>Tip: click map to move circle</div>
       </aside>
 
       <div
@@ -91,36 +122,10 @@ export default function Page() {
           setRadiusMeters={setRadiusMeters}
           circleCenter={circleCenter}
           setCircleCenter={setCircleCenter}
-          onStatusChange={({ loading, count, error }) => {
-            setLoading(loading);
-            setCount(count);
-            setError(error);
-          }}
+          onStatusChange={handleStatusChange}
+          onPopulationChange={handlePopulationChange}
         />
       </div>
-    </div>
-
-    <div
-  id="features" // this matches the header anchor
-  style={{
-    marginTop: 24,
-    padding: 16,
-    borderRadius: 16,
-    background: 'rgba(255,255,255,0.06)',
-    color: 'white',
-    border: '1px solid rgba(255,255,255,0.10)',
-  }}
->
-  <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>
-    Output
-  </h2>
-  <div style={{ fontSize: 14, opacity: 0.85 }}>
-    {/* You can display your map results here */}
-    Found {count} traffic signals within {radiusMeters} meters of (
-    {circleCenter.lat.toFixed(6)}, {circleCenter.lng.toFixed(6)}).
-  </div>
-</div>
-
     </div>
   );
 }

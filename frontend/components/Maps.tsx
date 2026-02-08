@@ -5,6 +5,17 @@ import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
 
 type LatLng = { lat: number; lng: number };
 
+function useDebouncedValue<T>(value: T, delayMs: number) {
+  const [debounced, setDebounced] = React.useState(value);
+
+  React.useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(t);
+  }, [value, delayMs]);
+
+  return debounced;
+}
+
 async function fetchTrafficSignals(center: LatLng, radiusMeters: number, signal?: AbortSignal) {
   const query = `
 [out:json];
@@ -42,6 +53,61 @@ out center;
     seen.add(k);
     return true;
   });
+}
+
+function circleToGeoJSON(center: LatLng, radiusMeters: number, steps = 48) {
+  const g = (window as any).google;
+  const computeOffset = g?.maps?.geometry?.spherical?.computeOffset;
+  if (!computeOffset) {
+    throw new Error('Google Maps geometry library not loaded. Ensure APIProvider has libraries={["geometry"]}.');
+  }
+
+  const centerLL = new g.maps.LatLng(center.lat, center.lng);
+  const coords: number[][] = [];
+
+  for (let i = 0; i < steps; i++) {
+    const heading = (i * 360) / steps;
+    const p = computeOffset(centerLL, radiusMeters, heading);
+    coords.push([p.lng(), p.lat()]);
+  }
+  coords.push(coords[0]);
+
+  return {
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        properties: {},
+        geometry: { type: 'Polygon', coordinates: [coords] },
+      },
+    ],
+  };
+}
+
+async function fetchWorldPopPopulation(geojson: any, year = 2020, signal?: AbortSignal) {
+  const res = await fetch('/api/worldpop-population', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    signal,
+    body: JSON.stringify({
+      dataset: 'wpgppop',
+      year,
+      geojson,
+      runasync: false,
+    }),
+  });
+
+  // Try JSON first; if it’s not JSON, fall back to text for debugging
+  const contentType = res.headers.get('content-type') || '';
+  if (!res.ok) {
+    if (contentType.includes('application/json')) {
+      const j = await res.json().catch(() => null);
+      throw new Error(j?.error ?? JSON.stringify(j) ?? `HTTP ${res.status}`);
+    }
+    throw new Error(await res.text());
+  }
+
+  return res.json() as Promise<{ total_population: number | null }>;
 }
 
 function CircleOverlay({ center, radiusMeters }: { center: LatLng; radiusMeters: number }) {
@@ -108,19 +174,27 @@ function TrafficSignalsOverlay({ points }: { points: LatLng[] }) {
 
 export default function Maps({
   radiusMeters,
-  setRadiusMeters, // not used right now, but left in for future
+  setRadiusMeters, // unused for now
   circleCenter,
   setCircleCenter,
   onStatusChange,
+  onPopulationChange,
 }: {
   radiusMeters: number;
   setRadiusMeters: React.Dispatch<React.SetStateAction<number>>;
   circleCenter: LatLng;
   setCircleCenter: React.Dispatch<React.SetStateAction<LatLng>>;
   onStatusChange: (s: { loading: boolean; count: number; error: string | null }) => void;
+  onPopulationChange: (s: { loading: boolean; population: number | null; error: string | null }) => void;
 }) {
   const [signals, setSignals] = React.useState<LatLng[]>([]);
+  const [lastPop, setLastPop] = React.useState<number | null>(null);
 
+  // Debounce inputs for POP only (so slider drag/click spam doesn’t explode)
+  const debouncedCenter = useDebouncedValue(circleCenter, 650);
+  const debouncedRadius = useDebouncedValue(radiusMeters, 650);
+
+  // Traffic signals lookup (keep as-is, small debounce already)
   React.useEffect(() => {
     const ctrl = new AbortController();
     onStatusChange({ loading: true, count: signals.length, error: null });
@@ -145,9 +219,44 @@ export default function Maps({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [circleCenter, radiusMeters]);
 
+  // Population lookup (debounced, abort-safe, preserves last value during loading)
+  React.useEffect(() => {
+    const ctrl = new AbortController();
+
+    // keep lastPop on screen while loading
+    onPopulationChange({ loading: true, population: lastPop, error: null });
+
+    const t = setTimeout(() => {
+      let geojson: any;
+      try {
+        geojson = circleToGeoJSON(debouncedCenter, debouncedRadius, 48); // fewer points => smaller payload, faster
+      } catch (e: any) {
+        onPopulationChange({ loading: false, population: lastPop, error: String(e?.message ?? e) });
+        return;
+      }
+
+      fetchWorldPopPopulation(geojson, 2020, ctrl.signal)
+        .then((out) => {
+          const pop = typeof out.total_population === 'number' ? out.total_population : null;
+          setLastPop(pop);
+          onPopulationChange({ loading: false, population: pop, error: null });
+        })
+        .catch((e) => {
+          if (e?.name === 'AbortError') return;
+          onPopulationChange({ loading: false, population: lastPop, error: String(e?.message ?? e) });
+        });
+    }, 50);
+
+    return () => {
+      clearTimeout(t);
+      ctrl.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedCenter, debouncedRadius]);
+
   return (
     <div style={{ width: '100%', height: '100%' }}>
-      <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}>
+      <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!} libraries={['geometry']}>
         <Map
           mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID}
           defaultZoom={13}
