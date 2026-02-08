@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Maps from '../../../components/Maps';
+import { Header } from "../../../components/Header";
 
 type LatLng = { lat: number; lng: number };
 
@@ -23,6 +24,8 @@ export default function Page() {
   const [popError, setPopError] = React.useState<string | null>(null);
 
   return (
+    <div className="min-h-screen pt-24 bg-black"> 
+      <Header />
     <div
       style={{
         minHeight: '100vh',
@@ -125,6 +128,29 @@ export default function Page() {
           }}
         />
       </div>
+    </div>
+
+    <div
+  id="features" // this matches the header anchor
+  style={{
+    marginTop: 24,
+    padding: 16,
+    borderRadius: 16,
+    background: 'rgba(255,255,255,0.06)',
+    color: 'white',
+    border: '1px solid rgba(255,255,255,0.10)',
+  }}
+>
+  <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>
+    Output
+  </h2>
+  <div style={{ fontSize: 14, opacity: 0.85 }}>
+    {/* You can display your map results here */}
+    Found {count} traffic signals within {radiusMeters} meters of (
+    {circleCenter.lat.toFixed(6)}, {circleCenter.lng.toFixed(6)}).
+  </div>
+</div>
+
     </div>
   );
 }
