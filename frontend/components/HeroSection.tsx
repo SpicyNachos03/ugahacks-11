@@ -57,7 +57,7 @@ export function HeroSection() {
 
       <div className="container mx-auto px-4 text-center relative z-10">
         <Badge variant="secondary" className="mb-6 bg-emerald-100 text-emerald-700 border-emerald-200">
-          🎉 Wow! Very cool website! Slogan! Words! Yippee!
+          🎉 Reducing Carboon Footprint through Idle Machines
         </Badge>
         <h1 className="mx-auto max-w-4xl text-4xl md:text-6xl lg:text-7xl tracking-tight mb-6 text-emerald-950">
           Build sustainable{" "}

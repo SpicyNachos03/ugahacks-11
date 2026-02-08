@@ -3,6 +3,7 @@
 import * as React from 'react';
 import Maps from '../../../components/Maps';
 import { Header } from '../../../components/Header';
+import { Footer } from '../../../components/Footer';
 import { GoogleGenAI } from '@google/genai';
 
 type LatLng = { lat: number; lng: number };
@@ -347,6 +348,32 @@ export default function Page() {
   ]);
   return (
     <div className="min-h-screen pt-20" style={{ background: '#f0fdf4', color: '#064e3b' }}>
+      <style jsx>{`
+  @keyframes pulse-border {
+    0% { border-color: #10b981; box-shadow: 0 0 0 0px rgba(16, 185, 129, 0.2); }
+    50% { border-color: #34d399; box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+    100% { border-color: #10b981; box-shadow: 0 0 0 0px rgba(16, 185, 129, 0); }
+  }
+
+  .impact-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .impact-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px rgba(6, 78, 59, 0.08) !important;
+  }
+
+  .stat-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .stat-card:hover {
+    background: #ffffff !important;
+    border-color: #10b981 !important;
+    transform: scale(1.02);
+  }
+`}</style>
       <Header />
 
       <div
@@ -385,26 +412,26 @@ export default function Page() {
           <div style={{ marginTop: 20, fontWeight: 700, fontSize: 13, color: '#059669' }}>Device Metrics</div>
 
           <div style={{ marginTop: 10, fontSize: 12 }}>
-  CPU Utilization: {avgCpuUtil.toFixed(2)}
-  <input
-    type="range"
-    min={0}
-    max={1}
-    step={0.01}
-    value={avgCpuUtil}
-    onChange={(e) => {
-      const newCpu = Number(e.target.value);
+            CPU Utilization: {avgCpuUtil.toFixed(2)}
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={avgCpuUtil}
+              onChange={(e) => {
+                const newCpu = Number(e.target.value);
 
-      if (newCpu >= avgGpuUtil) {
-        setCpuError('CPU utilization must be less than GPU utilization');
-        setAvgCpuUtil(0);
-      } else {
-        setCpuError(null);
-        setAvgCpuUtil(newCpu);
-      }
-    }}
-    style={{ width: '100%', accentColor: '#10b981' }}
-  />
+                if (newCpu >= avgGpuUtil) {
+                  setCpuError('CPU utilization must be less than GPU utilization');
+                  setAvgCpuUtil(0);
+                } else {
+                  setCpuError(null);
+                  setAvgCpuUtil(newCpu);
+                }
+              }}
+              style={{ width: '100%', accentColor: '#10b981' }}
+            />
 
   {cpuError && (
     <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>
@@ -494,8 +521,8 @@ export default function Page() {
       </div>
 
       {/* OUTPUT SECTION */}
-      {/* OUTPUT SECTION */}
-<div
+<div 
+  id = "output"
   style={{
     margin: '32px 70px 50px 70px',
     padding: 24,
@@ -555,56 +582,122 @@ export default function Page() {
     </div>
   </div>
 
-  {/* Device Counts */}
-  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
-    {Object.entries(deviceCounts || {}).map(([device, count]) => (
-      <div
-        key={device}
-        style={{
-          flex: 1,
-          minWidth: 140,
-          padding: 16,
-          borderRadius: 16,
-          background: '#ffffff',
-          border: '1px solid #f0fdf4',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-          textAlign: 'center',
-        }}
-      >
-        <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 6, color: '#6b7280' }}>
-          {device}
-        </div>
-        <div style={{ fontSize: 20, fontWeight: 700, color: '#059669' }}>
-          {count}
-        </div>
-      </div>
-    ))}
-  </div>
+  {/* Device Cards (Flip on Hover) */}
+{/* Device Cards (Flip on Hover) */}
+<div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
 
-  {/* Offload Per Device */}
-  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
-    {Object.entries(offloadPerDevice || {}).map(([device, kw]) => (
+  {!deviceCounts ? (
+    // Show 5 loading placeholders while data is null
+    Array.from({ length: 5 }).map((_, i) => (
       <div
-        key={device}
+        key={i}
         style={{
           flex: 1,
           minWidth: 160,
-          padding: 16,
+          height: 110,
           borderRadius: 16,
           background: '#f8fafc',
           border: '1px solid #e2e8f0',
-          textAlign: 'center',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 600,
+          color: '#94a3b8',
         }}
       >
-        <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 6, color: '#64748b' }}>
-          {device} Offload
-        </div>
-        <div style={{ fontSize: 20, fontWeight: 700, color: '#0f172a' }}>
-          {kw.toFixed(2)} kW
-        </div>
+        Loading...
       </div>
-    ))}
-  </div>
+    ))
+  ) : (
+    Object.keys(deviceCounts).map((device) => {
+      const count = deviceCounts?.[device];
+      const kw = offloadPerDevice?.[device];
+
+      return (
+        <div
+          key={device}
+          style={{
+            flex: 1,
+            minWidth: 160,
+            height: 110,
+            perspective: 1000,
+          }}
+        >
+          <div
+            style={{
+              position: 'relative',
+              width: '100%',
+              height: '100%',
+              transition: 'transform 0.5s',
+              transformStyle: 'preserve-3d',
+            }}
+            className="flip-card"
+          >
+            {/* FRONT */}
+            <div
+              style={{
+                position: 'absolute',
+                width: '100%',
+                height: '100%',
+                backfaceVisibility: 'hidden',
+                borderRadius: 16,
+                background: '#ffffff',
+                border: '1px solid #f0fdf4',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                textAlign: 'center',
+                padding: 16,
+              }}
+            >
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', marginBottom: 6 }}>
+                {device}
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: '#059669' }}>
+                {count == null ? 'Loading...' : count}
+              </div>
+            </div>
+
+            {/* BACK */}
+            <div
+              style={{
+                position: 'absolute',
+                width: '100%',
+                height: '100%',
+                backfaceVisibility: 'hidden',
+                transform: 'rotateY(180deg)',
+                borderRadius: 16,
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                textAlign: 'center',
+                padding: 16,
+              }}
+            >
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 6 }}>
+                {device} Offload
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: '#0f172a' }}>
+                {kw == null ? 'Loading...' : `${kw.toFixed(2)} kW`}
+              </div>
+            </div>
+          </div>
+
+          <style jsx>{`
+            div:hover > .flip-card {
+              transform: rotateY(180deg);
+            }
+          `}</style>
+        </div>
+      );
+    })
+  )}
+</div>
+
 
   {/* Capacity + Needed */}
   <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
@@ -725,6 +818,7 @@ export default function Page() {
   )}
 </div>
 </div>
+      <Footer />
 </div>
   );
 } 

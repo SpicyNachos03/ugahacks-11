@@ -30,7 +30,7 @@ export function Header() {
 
               {!isOnMaps && (
                 <a
-                  href="#pricing"
+                  href="#impact"
                   className="text-xs font-medium text-muted-foreground hover:text-emerald-600 transition-colors"
                 >
                   Impacts
