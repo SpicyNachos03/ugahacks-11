@@ -6,6 +6,74 @@ import { Header } from '../../../components/Header';
 
 type LatLng = { lat: number; lng: number };
 
+function useDebouncedValue<T>(value: T, delayMs: number) {
+  const [debounced, setDebounced] = React.useState(value);
+
+  React.useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(t);
+  }, [value, delayMs]);
+
+  return debounced;
+}
+
+async function fetchOpenMeteoWeather(
+  lat: number,
+  lng: number,
+  signal?: AbortSignal
+): Promise<{ temperatureF: number | null; humidityPct: number | null }> {
+  const url = new URL('https://api.open-meteo.com/v1/forecast');
+  url.searchParams.set('latitude', String(lat));
+  url.searchParams.set('longitude', String(lng));
+  url.searchParams.set('current', 'temperature_2m,relative_humidity_2m');
+  url.searchParams.set('temperature_unit', 'fahrenheit');
+  url.searchParams.set('timezone', 'auto');
+
+  const res = await fetch(url.toString(), { signal });
+  const ct = res.headers.get('content-type') || '';
+
+  if (!res.ok) {
+    if (ct.includes('application/json')) {
+      const j = await res.json().catch(() => null);
+      throw new Error(j?.reason || j?.error || `Weather HTTP ${res.status}`);
+    }
+    throw new Error(await res.text());
+  }
+
+  const j = await res.json();
+  const t = typeof j?.current?.temperature_2m === 'number' ? j.current.temperature_2m : null;
+  const h = typeof j?.current?.relative_humidity_2m === 'number' ? j.current.relative_humidity_2m : null;
+
+  return { temperatureF: t, humidityPct: h };
+}
+
+async function fetchOpenMeteoAQI(
+  lat: number,
+  lng: number,
+  signal?: AbortSignal
+): Promise<{ aqi: number | null }> {
+  const url = new URL('https://air-quality-api.open-meteo.com/v1/air-quality');
+  url.searchParams.set('latitude', String(lat));
+  url.searchParams.set('longitude', String(lng));
+  url.searchParams.set('current', 'us_aqi');
+  url.searchParams.set('timezone', 'auto');
+
+  const res = await fetch(url.toString(), { signal });
+  const ct = res.headers.get('content-type') || '';
+
+  if (!res.ok) {
+    if (ct.includes('application/json')) {
+      const j = await res.json().catch(() => null);
+      throw new Error(j?.reason || j?.error || `AQI HTTP ${res.status}`);
+    }
+    throw new Error(await res.text());
+  }
+
+  const j = await res.json();
+  const aqi = typeof j?.current?.us_aqi === 'number' ? j.current.us_aqi : null;
+  return { aqi };
+}
+
 export default function Page() {
   const [radiusMeters, setRadiusMeters] = React.useState(800);
   const [circleCenter, setCircleCenter] = React.useState<LatLng>({
@@ -13,7 +81,7 @@ export default function Page() {
     lng: -84.38633,
   });
 
-  // ===== NEW INPUT STATE =====
+  // ===== NEW DEVICE INPUT STATE =====
   const [avgCpuUtil, setAvgCpuUtil] = React.useState(0.5);
   const [avgGpuUtil, setAvgGpuUtil] = React.useState(0.5);
   const [availableMachines, setAvailableMachines] = React.useState(100);
@@ -28,6 +96,13 @@ export default function Page() {
   const [popLoading, setPopLoading] = React.useState(false);
   const [population, setPopulation] = React.useState<number | null>(null);
   const [popError, setPopError] = React.useState<string | null>(null);
+
+  // Open-Meteo weather + AQI state
+  const [meteoLoading, setMeteoLoading] = React.useState(false);
+  const [meteoError, setMeteoError] = React.useState<string | null>(null);
+  const [temperatureF, setTemperatureF] = React.useState<number | null>(null);
+  const [humidityPct, setHumidityPct] = React.useState<number | null>(null);
+  const [aqi, setAqi] = React.useState<number | null>(null);
 
   const handleStatusChange = React.useCallback(
     ({ loading, count, error }: { loading: boolean; count: number; error: string | null }) => {
@@ -46,6 +121,32 @@ export default function Page() {
     },
     []
   );
+
+  const debouncedCenter = useDebouncedValue(circleCenter, 600);
+
+  React.useEffect(() => {
+    const ctrl = new AbortController();
+    setMeteoLoading(true);
+    setMeteoError(null);
+
+    Promise.all([
+      fetchOpenMeteoWeather(debouncedCenter.lat, debouncedCenter.lng, ctrl.signal),
+      fetchOpenMeteoAQI(debouncedCenter.lat, debouncedCenter.lng, ctrl.signal),
+    ])
+      .then(([w, a]) => {
+        setTemperatureF(w.temperatureF);
+        setHumidityPct(w.humidityPct);
+        setAqi(a.aqi);
+        setMeteoLoading(false);
+      })
+      .catch((e) => {
+        if (e?.name === 'AbortError') return;
+        setMeteoError(String(e?.message ?? e));
+        setMeteoLoading(false);
+      });
+
+    return () => ctrl.abort();
+  }, [debouncedCenter.lat, debouncedCenter.lng]);
 
   return (
     <div className="min-h-screen pt-20 bg-black flex flex-col">
@@ -76,7 +177,7 @@ export default function Page() {
             onChange={(e) => setRadiusMeters(Number(e.target.value))}
           />
 
-          {/* ===== NEW INPUTS ===== */}
+          {/* ===== DEVICE METRICS ===== */}
           <div style={{ marginTop: 20, fontWeight: 700, fontSize: 13 }}>Device Metrics</div>
 
           <div style={{ marginTop: 10, fontSize: 12 }}>
@@ -124,6 +225,22 @@ export default function Page() {
               onChange={(e) => setAvgMachineLoad(Number(e.target.value))}
               style={{ width: '100%', marginTop: 4 }}
             />
+          </div>
+
+          {/* Weather + AQI */}
+          <div style={{ marginTop: 16, fontSize: 12 }}>
+            <div style={{ fontWeight: 700 }}>Weather + Air Quality</div>
+            <div>
+              Temperature (°F): {temperatureF == null ? '—' : `${temperatureF.toFixed(1)} °F`}
+            </div>
+            <div>
+              Humidity (%): {humidityPct == null ? '—' : `${Math.round(humidityPct)}%`}
+            </div>
+            <div>Air Quality Index (US AQI): {aqi == null ? '—' : Math.round(aqi)}</div>
+            <div style={{ fontSize: 11, opacity: 0.7 }}>
+              {meteoLoading ? 'Updating…' : 'Updated'}
+            </div>
+            {meteoError && <div style={{ color: '#ffb4b4' }}>Error: {meteoError}</div>}
           </div>
 
           {/* Traffic signals */}
@@ -177,6 +294,14 @@ export default function Page() {
           available_machines: {availableMachines}
           <br />
           average_machine_load: {avgMachineLoad.toFixed(2)}
+          <br /><br />
+          <b>Weather + AQI:</b>
+          <br />
+          Temperature: {temperatureF == null ? '—' : `${temperatureF.toFixed(1)} °F`}
+          <br />
+          Humidity: {humidityPct == null ? '—' : `${Math.round(humidityPct)}%`}
+          <br />
+          AQI: {aqi == null ? '—' : Math.round(aqi)}
         </div>
       </div>
     </div>
