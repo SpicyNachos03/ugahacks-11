@@ -47,7 +47,20 @@ def predict_wattage():
     except (TypeError, ValueError) as e:
         return jsonify({"error": f"Invalid numeric values: {e}"}), 400
 
+    # Idle cluster (0% CPU and 0% GPU): no power to offload. Model wasn't trained there and extrapolates wrong.
+    cpu_util = data.get("avg_cpu_util")
+    gpu_util = data.get("avg_gpu_util")
+    if cpu_util is not None and gpu_util is not None:
+        try:
+            c, g = float(cpu_util), float(gpu_util)
+            if c <= 0 and g <= 0:
+                return jsonify({"Wattage": 0.0})
+        except (TypeError, ValueError):
+            pass
+
     X = pd.DataFrame([row], columns=feature_names)
-    wattage = float(model.predict(X)[0])
+    # Model outputs kW; convert to watts for Wattage
+    power_kw = float(model.predict(X)[0])
+    wattage = round(max(0.0, power_kw * 1000), 2)
 
     return jsonify({"Wattage": wattage})
