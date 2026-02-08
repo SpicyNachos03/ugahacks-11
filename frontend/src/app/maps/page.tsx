@@ -3,9 +3,39 @@
 import * as React from 'react';
 import Maps from '../../../components/Maps';
 import { Header } from '../../../components/Header';
+import { GoogleGenAI } from '@google/genai';
 
 type LatLng = { lat: number; lng: number };
+const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY });
+async function geminiWeatherAnalysis(
+  temperatureF: number,
+  humidityPct: number,
+  aqi: number
+) {
+  const contents = `Evaluate whether this location is suitable for deploying small edge devices to participate in federated learning model training from AI data centers. Consider these environmental constraints:
 
+Weather Data:
+- Temperature: ${temperatureF}°F
+- Humidity: ${humidityPct}%
+- Air Quality (US AQI): ${aqi}
+
+Suitability Criteria:
+- Temperature: Optimal range is 32°F to 95°F. Below 32°F or above 95°F is NOT suitable due to device performance degradation and thermal stress.
+- Humidity: Optimal range is 20% to 80%. Below 20% risks static electricity damage. Above 80% risks condensation and corrosion.
+- Air Quality: AQI below 100 is suitable. AQI above 100 indicates poor air quality that can affect device cooling systems and longevity.
+
+Based on these thresholds, determine:
+1. Whether this location is SUITABLE or NOT SUITABLE for federated learning device deployment
+2. Which environmental factors (if any) are problematic
+3. Brief explanation of the decision`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: contents,
+  });
+  console.log(response.text);
+  return response.text;
+}
 function useDebouncedValue<T>(value: T, delayMs: number) {
   const [debounced, setDebounced] = React.useState(value);
 
@@ -105,6 +135,10 @@ export default function Page() {
   const [humidityPct, setHumidityPct] = React.useState<number | null>(null);
   const [aqi, setAqi] = React.useState<number | null>(null);
 
+  // Gemini analysis state
+  const [geminiLoading, setGeminiLoading] = React.useState(false);
+  const [geminiAnalysis, setGeminiAnalysis] = React.useState<string | null>(null);
+
   const handleStatusChange = React.useCallback(
     ({ loading, count, error }: { loading: boolean; count: number; error: string | null }) => {
       setLoading(loading);
@@ -148,6 +182,22 @@ export default function Page() {
 
     return () => ctrl.abort();
   }, [debouncedCenter.lat, debouncedCenter.lng]);
+
+  // Call Gemini analysis when weather variables are updated
+  React.useEffect(() => {
+    if (temperatureF !== null && humidityPct !== null && aqi !== null) {
+      setGeminiLoading(true);
+      geminiWeatherAnalysis(temperatureF, humidityPct, aqi)
+        .then((result) => {
+          setGeminiAnalysis(result);
+          setGeminiLoading(false);
+        })
+        .catch((error) => {
+          console.error('Gemini analysis error:', error);
+          setGeminiLoading(false);
+        });
+    }
+  }, [temperatureF, humidityPct, aqi]);
 
   // ===== WATTAGE POST (NEW) =====
   const debouncedAvgCpuUtil = useDebouncedValue(avgCpuUtil, 500);
@@ -551,16 +601,10 @@ export default function Page() {
                   justifyContent: 'center',
                 }}
               >
-                <div style={{ fontSize: 13, lineHeight: 1.6, color: '#333' }}>
-                  <p style={{ marginBottom: 8 }}>
-                    It's quite cold at 33.4 °F, so bundle up if you're heading outdoors. Frost conditions are likely.
-                  </p>
-                  <p style={{ marginBottom: 8 }}>
-                    The humidity is relatively low at 34%, which means the air is quite dry. This could make skin and respiratory conditions feel more pronounced.
-                  </p>
-                  <p>
-                    Air quality is excellent with an AQI of 29, indicating clean air and good conditions for outdoor activities.
-                  </p>
+                <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.5, color: '#333' }}>
+                  {geminiLoading && <p style={{ margin: 0 }}>Loading analysis...</p>}
+                  {geminiAnalysis && <p style={{ margin: 0 }}>{geminiAnalysis}</p>}
+                  {!geminiLoading && !geminiAnalysis && <p style={{ margin: 0 }}>Analysis will appear here.</p>}
                 </div>
               </div>
             </div>
