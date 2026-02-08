@@ -101,6 +101,28 @@ async function fetchOpenMeteoAQI(lat: number, lng: number, signal?: AbortSignal)
 }
 
 export default function Page() {
+  // ===== Allocation from population (backend) =====
+  type AllocationResponse = {
+    counts: Record<string, number>;
+    max_offload_capacity_kw: number;
+    offload_needed_kw: number;
+    offload_per_device: Record<string, number>;
+    percent_offload: number;
+    raw_kw_offload: number;
+  };
+
+  const [allocLoading, setAllocLoading] = React.useState(false);
+  const [allocError, setAllocError] = React.useState<string | null>(null);
+
+  // Keep grouped objects together
+  const [deviceCounts, setDeviceCounts] = React.useState<Record<string, number> | null>(null);
+  const [offloadPerDevice, setOffloadPerDevice] = React.useState<Record<string, number> | null>(null);
+
+  // Scalars as individual variables
+  const [maxOffloadCapacityKw, setMaxOffloadCapacityKw] = React.useState<number | null>(null);
+  const [offloadNeededKw, setOffloadNeededKw] = React.useState<number | null>(null);
+  const [percentOffload, setPercentOffload] = React.useState<number | null>(null);
+  const [rawKwOffload, setRawKwOffload] = React.useState<number | null>(null);
   const [radiusMeters, setRadiusMeters] = React.useState(800);
   const [cpuError, setCpuError] = React.useState<string | null>(null);
   const [circleCenter, setCircleCenter] = React.useState<LatLng>({
@@ -108,10 +130,9 @@ export default function Page() {
     lng: -84.38633,
   });
 
-  const [avgCpuUtil, setAvgCpuUtil] = React.useState(0.5);
-  const [avgGpuUtil, setAvgGpuUtil] = React.useState(0.5);
+  const [avgCpuUtil, setAvgCpuUtil] = React.useState(0.85);
+  const [avgGpuUtil, setAvgGpuUtil] = React.useState(0.85);
   const [availableMachines, setAvailableMachines] = React.useState(100);
-  const [avgMachineLoad, setAvgMachineLoad] = React.useState(0.7);
 
   const [wattageLoading, setWattageLoading] = React.useState(false);
   const [wattage, setWattage] = React.useState<number | null>(null);
@@ -178,7 +199,70 @@ export default function Page() {
 
     return () => ctrl.abort();
   }, [debouncedCenter.lat, debouncedCenter.lng]);
+  React.useEffect(() => {
+    if (population == null) return;
+    if (count == null) return;
+    if (wattage == null) return;
 
+    const trafficLights = Math.max(0, Math.round(count * 5)); // intersections * 5
+    const ctrl = new AbortController();
+
+    setAllocLoading(true);
+    setAllocError(null);
+
+    fetch('http://localhost:5001/api/allocate_from_population', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: ctrl.signal,
+      body: JSON.stringify({
+        population,
+        traffic_light_count: trafficLights,
+        wattage, // backend expects W (watts)
+      }),
+    })
+      .then(async (res) => {
+        const ct = res.headers.get('content-type') || '';
+
+        if (!res.ok) {
+          if (ct.includes('application/json')) {
+            const j = await res.json().catch(() => null);
+            throw new Error(j?.error || j?.message || `HTTP ${res.status}`);
+          }
+          throw new Error(await res.text());
+        }
+
+        const data: AllocationResponse = await res.json();
+
+        // grouped objects
+        setDeviceCounts(data?.counts ?? null);
+        setOffloadPerDevice(data?.offload_per_device ?? null);
+
+        // scalars
+        setMaxOffloadCapacityKw(
+          typeof data?.max_offload_capacity_kw === 'number' ? data.max_offload_capacity_kw : null
+        );
+        setOffloadNeededKw(typeof data?.offload_needed_kw === 'number' ? data.offload_needed_kw : null);
+        setPercentOffload(typeof data?.percent_offload === 'number' ? data.percent_offload : null);
+        setRawKwOffload(typeof data?.raw_kw_offload === 'number' ? data.raw_kw_offload : null);
+
+        setAllocLoading(false);
+      })
+      .catch((e) => {
+        if (e?.name === 'AbortError') return;
+        setAllocError(String(e?.message ?? e));
+        setAllocLoading(false);
+
+        // optional: clear outputs on error so UI doesn't show stale numbers
+        setDeviceCounts(null);
+        setOffloadPerDevice(null);
+        setMaxOffloadCapacityKw(null);
+        setOffloadNeededKw(null);
+        setPercentOffload(null);
+        setRawKwOffload(null);
+      });
+
+    return () => ctrl.abort();
+  }, [population, count, wattage]);
   // Call Gemini analysis when weather variables are updated
   React.useEffect(() => {
     if (temperatureF !== null && humidityPct !== null && aqi !== null) {
@@ -199,7 +283,6 @@ export default function Page() {
   const debouncedAvgCpuUtil = useDebouncedValue(avgCpuUtil, 500);
   const debouncedAvgGpuUtil = useDebouncedValue(avgGpuUtil, 500);
   const debouncedAvailableMachines = useDebouncedValue(availableMachines, 500);
-  const debouncedAvgMachineLoad = useDebouncedValue(avgMachineLoad, 500);
 
   React.useEffect(() => {
     const ctrl = new AbortController();
@@ -213,7 +296,6 @@ export default function Page() {
         avg_cpu_util: debouncedAvgCpuUtil,
         avg_gpu_util: debouncedAvgGpuUtil,
         active_machines: debouncedAvailableMachines,
-        machine_load_1_mean: debouncedAvgMachineLoad,
       }),
       signal: ctrl.signal,
     })
@@ -231,7 +313,8 @@ export default function Page() {
         if (typeof data?.Wattage !== 'number' || Number.isNaN(data.Wattage)) {
           throw new Error('Unexpected response format');
         }
-        setWattage(data.Wattage);
+        console.log('Wattage from backend:', data.Wattage);
+        setWattage(data.Wattage); // Convert Wh to kWh
         setWattageLoading(false);
       })
       .catch((e) => {
@@ -242,8 +325,26 @@ export default function Page() {
       });
 
     return () => ctrl.abort();
-  }, [debouncedAvgCpuUtil, debouncedAvgGpuUtil, debouncedAvailableMachines, debouncedAvgMachineLoad]);
-
+  }, [debouncedAvgCpuUtil, debouncedAvgGpuUtil, debouncedAvailableMachines]);
+  React.useEffect(() => {
+    console.log('[ALLOC STATE] deviceCounts:', deviceCounts);
+    console.log('[ALLOC STATE] offloadPerDevice:', offloadPerDevice);
+    console.log('[ALLOC STATE] maxOffloadCapacityKw:', maxOffloadCapacityKw);
+    console.log('[ALLOC STATE] offloadNeededKw:', offloadNeededKw);
+    console.log('[ALLOC STATE] percentOffload:', percentOffload);
+    console.log('[ALLOC STATE] rawKwOffload:', rawKwOffload);
+    console.log('[ALLOC STATE] allocLoading:', allocLoading);
+    console.log('[ALLOC STATE] allocError:', allocError);
+  }, [
+    deviceCounts,
+    offloadPerDevice,
+    maxOffloadCapacityKw,
+    offloadNeededKw,
+    percentOffload,
+    rawKwOffload,
+    allocLoading,
+    allocError,
+  ]);
   return (
     <div className="min-h-screen pt-20" style={{ background: '#f0fdf4', color: '#064e3b' }}>
       <Header />
@@ -348,20 +449,11 @@ export default function Page() {
             />
           </div>
 
-          <div style={{ marginTop: 10, fontSize: 12 }}>
-            Avg Machine Load
-            <input
-              type="number"
-              step="0.01"
-              value={avgMachineLoad}
-              onChange={(e) => setAvgMachineLoad(Number(e.target.value))}
-              style={{ width: '100%', marginTop: 4, padding: '4px', border: '1px solid #d1fae5', borderRadius: '4px' }}
-            />
-          </div>
+
 
           <div style={{ marginTop: 12, fontSize: 12, padding: '8px', background: '#ecfdf5', borderRadius: '8px' }}>
             <div style={{ fontWeight: 700, color: '#059669' }}>Predicted Wattage</div>
-            {wattageLoading ? 'Predicting…' : wattage == null ? '—' : `${wattage.toFixed(2)} W`}
+            {wattageLoading ? 'Predicting…' : wattage == null ? '—' : `${(wattage / 1000).toFixed(2)} kWh`}
             {wattageError && <div style={{ color: '#ef4444' }}>Error: {wattageError}</div>}
           </div>
 
@@ -376,29 +468,29 @@ export default function Page() {
 
         {/* MAP DIV */}
         {/* MAP DIV WRAPPER */}
-<div
-  className="relative flex-1 rounded-2xl overflow-hidden border border-emerald-100 shadow-xl bg-gradient-to-b from-emerald-50 via-white to-white"
-  style={{
-    height: '100%',
-  }}
->
-  {/* Decorative Background Blobs - These sit behind the map */}
-  <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-50">
-    <div className="absolute top-0 left-1/4 w-64 h-64 bg-emerald-400/20 rounded-full blur-3xl"></div>
-    <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-green-400/20 rounded-full blur-3xl"></div>
-  </div>
+        <div
+          className="relative flex-1 rounded-2xl overflow-hidden border border-emerald-100 shadow-xl bg-gradient-to-b from-emerald-50 via-white to-white"
+          style={{
+            height: '100%',
+          }}
+        >
+          {/* Decorative Background Blobs - These sit behind the map */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-50">
+            <div className="absolute top-0 left-1/4 w-64 h-64 bg-emerald-400/20 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-green-400/20 rounded-full blur-3xl"></div>
+          </div>
 
-  <div className="relative z-10 h-full w-full">
-    <Maps
-      radiusMeters={radiusMeters}
-      setRadiusMeters={setRadiusMeters}
-      circleCenter={circleCenter}
-      setCircleCenter={setCircleCenter}
-      onStatusChange={handleStatusChange}
-      onPopulationChange={handlePopulationChange}
-    />
-  </div>
-</div>
+          <div className="relative z-10 h-full w-full">
+            <Maps
+              radiusMeters={radiusMeters}
+              setRadiusMeters={setRadiusMeters}
+              circleCenter={circleCenter}
+              setCircleCenter={setCircleCenter}
+              onStatusChange={handleStatusChange}
+              onPopulationChange={handlePopulationChange}
+            />
+          </div>
+        </div>
       </div>
 
       {/* OUTPUT SECTION */}
@@ -443,7 +535,7 @@ export default function Page() {
           >
             <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, color: '#059669' }}>Total kWh Offloaded</div>
             <div style={{ fontSize: 32, fontWeight: 700, color: '#064e3b' }}>
-              {(availableMachines * avgMachineLoad * 0.8).toFixed(1)} kWh
+              {(availableMachines * 0.8).toFixed(1)} kWh
             </div>
           </div>
         </div>
@@ -553,14 +645,14 @@ export default function Page() {
           </div>
 
           <div style={{ flex: 2, padding: 24, borderRadius: 24, background: '#ffffff', border: '2px solid #10b981', position: 'relative' }}>
-             <div style={{ position: 'absolute', top: -12, left: 24, background: '#10b981', color: 'white', padding: '2px 12px', borderRadius: '12px', fontSize: 12, fontWeight: 700 }}>
-                AI INSIGHT
-             </div>
-                <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.5, color: '#333' }}>
-                  {geminiLoading && <p style={{ margin: 0 }}>Loading analysis...</p>}
-                  {geminiAnalysis && <p style={{ margin: 0 }}>{geminiAnalysis}</p>}
-                  {!geminiLoading && !geminiAnalysis && <p style={{ margin: 0 }}>Analysis will appear here.</p>}
-                </div>
+            <div style={{ position: 'absolute', top: -12, left: 24, background: '#10b981', color: 'white', padding: '2px 12px', borderRadius: '12px', fontSize: 12, fontWeight: 700 }}>
+              AI INSIGHT
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.5, color: '#333' }}>
+              {geminiLoading && <p style={{ margin: 0 }}>Loading analysis...</p>}
+              {geminiAnalysis && <p style={{ margin: 0 }}>{geminiAnalysis}</p>}
+              {!geminiLoading && !geminiAnalysis && <p style={{ margin: 0 }}>Analysis will appear here.</p>}
+            </div>
           </div>
         </div>
       </div>
