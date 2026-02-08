@@ -1,0 +1,14 @@
+# Python virtual environment
+venv/
+.venv/
+env/
+
+# Python cache (makes things faster but doesn't belong on GitHub)
+__pycache__/
+*.pyc
+
+# Environment variables 
+.env
+
+# MacOS system files
+.DS_Store
